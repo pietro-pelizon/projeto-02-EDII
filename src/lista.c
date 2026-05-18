@@ -7,18 +7,18 @@ typedef struct stNode {
     void *data;
     struct stNode *next;
     struct stNode *prev;
-} node;
+} nodel_t;
 
 typedef struct stLista {
     int tam;
-    node *head;
-    node *tail;
-} lista;
+    nodel_t *head;
+    nodel_t *tail;
+} lista_t;
 
 // ========== FUNÇÕES BASE ==========
 
-lista *init_lista() {
-    lista *l = malloc (sizeof(lista));
+lista_t *init_lista() {
+    lista_t *l = malloc (sizeof(lista_t));
     if (l == NULL) {
         printf("LISTA: Erro ao alocar memoria para a lista!\n");
         return NULL;
@@ -31,11 +31,11 @@ lista *init_lista() {
     return l;
 }
 
-int get_tam_lista(lista *l) {
+int get_tam_lista(lista_t *l) {
     return l -> tam;
 }
 
-bool is_empty_lista(lista *l) {
+bool is_empty_lista(lista_t *l) {
     if (l -> tam == 0 || l -> head == NULL) {
         return true;
     }
@@ -43,8 +43,8 @@ bool is_empty_lista(lista *l) {
     return false;
 }
 
-void insert_head(lista *l, void *new_data) {
-    node *new = malloc (sizeof(node));
+void insert_head(lista_t *l, void *new_data) {
+    nodel_t *new = malloc (sizeof(nodel_t));
     if (new == NULL) {
         printf("LISTA: Erro ao alocar memoria para o novo node da lista!\n");
         return;
@@ -65,8 +65,8 @@ void insert_head(lista *l, void *new_data) {
 
 }
 
-void insert_tail(lista *l, void *new_data) {
-    node *new = malloc (sizeof(node));
+void insert_tail(lista_t *l, void *new_data) {
+    nodel_t *new = malloc (sizeof(nodel_t));
     if (new == NULL) {
         printf("LISTA: Erro ao alocar memoria para o novo node\n");
         return;
@@ -91,7 +91,7 @@ void insert_tail(lista *l, void *new_data) {
 
 }
 
-void index_insert(lista *l, void *new_data, int index) {
+void index_insert(lista_t *l, void *new_data, int index) {
     if (index > l -> tam || index < 0) {
         return;
     }
@@ -106,14 +106,14 @@ void index_insert(lista *l, void *new_data, int index) {
         return;
     }
 
-    node *new = malloc (sizeof(node));
+    nodel_t *new = malloc (sizeof(nodel_t));
     if (new == NULL) {
         printf("LISTA: Erro ao alocar memoria o novo no da lista!\n");
         return;
     }
     new -> data = new_data;
 
-    node *current = l -> head;
+    nodel_t *current = l -> head;
     for (int i = 0; i < index; i++) {
         current = current -> next;
     }
@@ -129,7 +129,7 @@ void index_insert(lista *l, void *new_data, int index) {
 
 }
 
-void *remove_head(lista *l) {
+void *remove_head(lista_t *l) {
     if (l == NULL) {
         return NULL;
     }
@@ -139,7 +139,7 @@ void *remove_head(lista *l) {
         return NULL;
     }
 
-    node *removed = l -> head;
+    nodel_t *removed = l -> head;
 
     void *data = l -> head -> data;
 
@@ -160,7 +160,7 @@ void *remove_head(lista *l) {
     return data;
 }
 
-void *remove_tail(lista *l) {
+void *remove_tail(lista_t *l) {
     if (l == NULL) {
         return NULL;
     }
@@ -170,7 +170,7 @@ void *remove_tail(lista *l) {
         return NULL;
     }
 
-    node *removed = l -> tail;
+    nodel_t *removed = l -> tail;
     void *data = l -> tail -> data;
 
     if (l -> head == l -> tail) {
@@ -191,7 +191,7 @@ void *remove_tail(lista *l) {
 
 }
 
-void *remove_index(lista *l, int index) {
+void *remove_index(lista_t *l, int index) {
     if (l == NULL || index < 0 || index >= l -> tam ) {
         return NULL;
     }
@@ -205,7 +205,7 @@ void *remove_index(lista *l, int index) {
         return remove_tail(l);
     }
 
-    node *current = l -> head;
+    nodel_t *current = l -> head;
     for (int i = 0; i < index; i++) {
         current = current -> next;
     }
@@ -221,14 +221,14 @@ void *remove_index(lista *l, int index) {
 
 }
 
-void free_lista(lista *l, void (*free_data)(void *data)) {
+void free_lista(lista_t *l, void (*free_data)(void *data)) {
     if (l == NULL) {
         return;
     }
 
-    node *current = l -> head;
+    nodel_t *current = l -> head;
     while (current != NULL) {
-        node *next = current -> next;
+        nodel_t *next = current -> next;
 
         if (free_data != NULL && current -> data != NULL) {
             free_data(current -> data);
@@ -243,7 +243,7 @@ void free_lista(lista *l, void (*free_data)(void *data)) {
 
 // ========== FUNÇÕES GET ==========
 
-void *get_head_data(lista *l) {
+void *get_head_data(lista_t *l) {
     if (is_empty_lista(l)) {
         return NULL;
     }
@@ -251,7 +251,7 @@ void *get_head_data(lista *l) {
     return l -> head -> data;
 }
 
-void *get_node_data(node *n) {
+void *get_node_data(nodel_t *n) {
     if (n == NULL || n -> data == NULL) {
         return NULL;
     }
@@ -259,7 +259,7 @@ void *get_node_data(node *n) {
     return n -> data;
 }
 
-node *get_head_node(lista *l) {
+nodel_t *get_head_node(lista_t *l) {
     if (is_empty_lista(l)) {
         return NULL;
     }
@@ -267,7 +267,7 @@ node *get_head_node(lista *l) {
     return l -> head;
 }
 
-void *get_tail_data(lista *l) {
+void *get_tail_data(lista_t *l) {
     if (is_empty_lista(l)) {
         return NULL;
     }
@@ -275,7 +275,7 @@ void *get_tail_data(lista *l) {
     return l -> tail -> data;
 }
 
-node *get_tail_node(lista *l) {
+nodel_t *get_tail_node(lista_t *l) {
     if (is_empty_lista(l)) {
         return NULL;
     }
@@ -283,7 +283,7 @@ node *get_tail_node(lista *l) {
     return l -> tail;
 }
 
-node *get_node_index(lista *l, int index) {
+nodel_t *get_node_index(lista_t *l, int index) {
     if (is_empty_lista(l)) {
         return NULL;
     }
@@ -301,7 +301,7 @@ node *get_node_index(lista *l, int index) {
         return get_tail_node(l);
     }
 
-    node *current = l -> head;
+    nodel_t *current = l -> head;
     for (int i = 0; i < index; i++) {
         current = current -> next;
     }
@@ -309,7 +309,7 @@ node *get_node_index(lista *l, int index) {
     return current;
 }
 
-void *get_data_index(lista *l, int index) {
+void *get_data_index(lista_t *l, int index) {
     if (is_empty_lista(l)) {
         return NULL;
     }
@@ -327,7 +327,7 @@ void *get_data_index(lista *l, int index) {
         return get_tail_data(l);
     }
 
-    node *current = l -> head;
+    nodel_t *current = l -> head;
     for (int i = 0; i < index; i++) {
         current = current -> next;
     }
@@ -335,7 +335,7 @@ void *get_data_index(lista *l, int index) {
     return current -> data;
 }
 
-node *go_next_node(node *n) {
+nodel_t *go_next_node(nodel_t *n) {
     if (n == NULL || n -> next == NULL) {
         return NULL;
     }
@@ -343,7 +343,7 @@ node *go_next_node(node *n) {
     return n -> next;
 }
 
-node *go_prev_node(node *n) {
+nodel_t *go_prev_node(nodel_t *n) {
     if (n == NULL || n -> prev == NULL) {
         return NULL;
     }
@@ -351,7 +351,7 @@ node *go_prev_node(node *n) {
     return n -> prev;
 }
 
-node *get_head_next(lista *l) {
+nodel_t *get_head_next(lista_t *l) {
     if (is_empty_lista(l)) {
         return NULL;
     }
@@ -359,7 +359,7 @@ node *get_head_next(lista *l) {
     return l -> head -> next;
 }
 
-node *get_tail_prev(lista *l) {
+nodel_t *get_tail_prev(lista_t *l) {
     if (is_empty_lista(l)) {
         return NULL;
     }
@@ -369,7 +369,7 @@ node *get_tail_prev(lista *l) {
 
 // =========== FUNÇÕES AUXILIARES ===========
 
-void *remove_first_data(lista *l, void *key, int (*compare)(void *a, void *b)) {
+void *remove_first_data(lista_t *l, void *key, int (*compare)(void *a, void *b)) {
     if (l == NULL) {
         return NULL;
     }
@@ -379,7 +379,7 @@ void *remove_first_data(lista *l, void *key, int (*compare)(void *a, void *b)) {
         return NULL;
     }
 
-    node *current = l -> head;
+    nodel_t *current = l -> head;
     int index = 0;
     while (current != NULL) {
         if (compare(key, current -> data) == 0) {
@@ -394,14 +394,14 @@ void *remove_first_data(lista *l, void *key, int (*compare)(void *a, void *b)) {
     return NULL;
 }
 
-int get_index(lista *l, node *n) {
+int get_index(lista_t *l, nodel_t *n) {
     if (l == NULL || n == NULL) {
         return -1;
     }
 
     int i = 0;
 
-    node *aux = l -> head;
+    nodel_t *aux = l -> head;
     while (aux != NULL && aux != n) {
         aux = go_next_node(aux);
         i++;
@@ -414,8 +414,8 @@ int get_index(lista *l, node *n) {
     return i;
 }
 
-void *search_lista(lista *l, void *key, int (*compare)(void *a, void *b)) {
-    node *current = l -> head;
+void *search_lista(lista_t *l, void *key, int (*compare)(void *a, void *b)) {
+    nodel_t *current = l -> head;
     while (current != NULL) {
         if (compare(key, current -> data) == 0) {
             return current -> data;
@@ -427,13 +427,13 @@ void *search_lista(lista *l, void *key, int (*compare)(void *a, void *b)) {
     return NULL;
 }
 
-void print_lista(lista *l, void (*print_data)(void *data)) {
+void print_lista(lista_t *l, void (*print_data)(void *data)) {
     if (l == NULL) {
         printf("LISTA: Ponteiro nulo passado para a funcao 'print_lista'\n");
         return;
     }
 
-    node *current = l -> head;
+    nodel_t *current = l -> head;
     while (current != NULL) {
         if (current -> data != NULL && print_data != NULL) {
             print_data(current->data);
@@ -443,13 +443,13 @@ void print_lista(lista *l, void (*print_data)(void *data)) {
     }
 }
 
-void reverse_lista(lista *l) {
+void reverse_lista(lista_t *l) {
     if (l == NULL || l -> head == NULL) {
         return;
     }
 
-    node *current = l -> head;
-    node *temp = NULL;
+    nodel_t *current = l -> head;
+    nodel_t *temp = NULL;
 
     while (current != NULL) {
         temp = current -> prev;
@@ -465,14 +465,14 @@ void reverse_lista(lista *l) {
     l->tail = temp;
 }
 
-void clear_lista(lista *l, void (*free_data)(void *data)) {
+void clear_lista(lista_t *l, void (*free_data)(void *data)) {
     if (l == NULL) {
         return;
     }
 
-    node *current = l->head;
+    nodel_t *current = l->head;
     while (current != NULL) {
-        node *next = current->next;
+        nodel_t *next = current->next;
 
         if (free_data != NULL && current->data != NULL) {
             free_data(current->data);
@@ -487,13 +487,13 @@ void clear_lista(lista *l, void (*free_data)(void *data)) {
     l->tam = 0;
 }
 
-void foreach_lista(lista *l, void (*apply)(void *data)) {
+void foreach_lista(lista_t *l, void (*apply)(void *data)) {
     if (l == NULL) return;
     if (is_empty_lista(l)) {
             return;
     }
 
-    node *current = l -> head;
+    nodel_t *current = l -> head;
     while (current != NULL) {
         if (apply) {
             apply(current -> data);
@@ -502,7 +502,7 @@ void foreach_lista(lista *l, void (*apply)(void *data)) {
     }
 }
 
-void *find_max(lista *l, int (*compare)(void *a, void *b)) {
+void *find_max(lista_t *l, int (*compare)(void *a, void *b)) {
     if (is_empty_lista(l)) {
         return NULL;
     }
@@ -512,7 +512,7 @@ void *find_max(lista *l, int (*compare)(void *a, void *b)) {
     }
 
     void *max = l -> head -> data;
-    node *current = l -> head -> next;
+    nodel_t *current = l -> head -> next;
     while (current != NULL) {
         if (compare(current -> data, max) > 0) {
             max = current -> data;
@@ -523,7 +523,7 @@ void *find_max(lista *l, int (*compare)(void *a, void *b)) {
     return max;
 }
 
-void *find_min(lista *l, int (*compare)(void *a, void *b)) {
+void *find_min(lista_t *l, int (*compare)(void *a, void *b)) {
      if (is_empty_lista(l)) {
         return NULL;
     }
@@ -533,7 +533,7 @@ void *find_min(lista *l, int (*compare)(void *a, void *b)) {
     }
 
     void *min = l -> head -> data;
-    node *current = l -> head -> next;
+    nodel_t *current = l -> head -> next;
     while (current != NULL) {
         if (compare(current -> data, min) < 0) {
             min = current -> data;
@@ -544,7 +544,7 @@ void *find_min(lista *l, int (*compare)(void *a, void *b)) {
     return min;
 }
 
-int contains(lista *l, void *key, int (*compare)(void *a, void *b)) {
+int contains(lista_t *l, void *key, int (*compare)(void *a, void *b)) {
     if (search_lista(l, key, compare) != NULL) {
         return true;
     }
@@ -552,7 +552,7 @@ int contains(lista *l, void *key, int (*compare)(void *a, void *b)) {
     return false;
 }
 
-void swap_node_data(node *n1, node *n2) {
+void swap_node_data(nodel_t *n1, nodel_t *n2) {
     if (n1 == NULL || n2 == NULL) return;
 
     void *temp = n1 -> data;
@@ -560,16 +560,16 @@ void swap_node_data(node *n1, node *n2) {
     n2 -> data = temp;
 }
 
-lista *filter_lista(lista *l, int (*predicate)(void *data)) {
+lista_t *filter_lista(lista_t *l, int (*predicate)(void *data)) {
     if (l == NULL) return NULL;
     if (is_empty_lista(l)) return init_lista();
 
-    lista *filtered_lista = init_lista();
+    lista_t *filtered_lista = init_lista();
     if (filtered_lista == NULL) {
         return NULL;
     }
 
-    node *current = l -> head;
+    nodel_t *current = l -> head;
     while (current != NULL) {
         if (predicate && predicate(current -> data) == 1) {
             insert_tail(filtered_lista, current -> data);
@@ -580,10 +580,10 @@ lista *filter_lista(lista *l, int (*predicate)(void *data)) {
     return filtered_lista;
 }
 
-void map_lista(lista *l, void (*transform)(void *data)) {
+void map_lista(lista_t *l, void (*transform)(void *data)) {
     if (l == NULL || is_empty_lista(l) || transform == NULL) return;
 
-    node *current = l -> head;
+    nodel_t *current = l -> head;
 
     while (current != NULL) {
         transform(current -> data);
@@ -591,12 +591,12 @@ void map_lista(lista *l, void (*transform)(void *data)) {
     }
 }
 
-int remove_all_if(lista *l, int (*predicate)(void *data), void (*free_data)(void *data)) {
+int remove_all_if(lista_t *l, int (*predicate)(void *data), void (*free_data)(void *data)) {
     if (l == NULL || predicate == NULL) return 0;
 
     int removidos = 0;
-    node *current = l->head;
-    node *next_node = NULL;
+    nodel_t *current = l->head;
+    nodel_t *next_node = NULL;
 
     while (current != NULL) {
         next_node = current->next;
@@ -629,19 +629,19 @@ int remove_all_if(lista *l, int (*predicate)(void *data), void (*free_data)(void
 
 // =========== FUNÇÕES DE ORDENAÇÃO PARA LISTA ==========
 
-void insertion_sort_lista(lista *l, int (*cmp_data)(void *a, void *b)) {
+void insertion_sort_lista(lista_t *l, int (*cmp_data)(void *a, void *b)) {
     if (is_empty_lista(l) || get_tam_lista(l) <= 1) {
         return;
     }
 
-    node *node_i = l -> head -> next;
+    nodel_t *node_i = l -> head -> next;
 
 
     while (node_i != NULL) {
-        node *node_j = node_i;
-        node *j_prev = node_j -> prev;
+        nodel_t *node_j = node_i;
+        nodel_t *j_prev = node_j -> prev;
 
-        node *next_i = node_i -> next;
+        nodel_t *next_i = node_i -> next;
 
 
         while (j_prev != NULL && cmp_data(j_prev -> data, node_j -> data) > 0) {
@@ -654,9 +654,9 @@ void insertion_sort_lista(lista *l, int (*cmp_data)(void *a, void *b)) {
     }
 }
 
-static node *get_middle_lista(node *head) {
-    node *slow = head;
-    node *fast = head -> next;
+static nodel_t *get_middle_lista(nodel_t *head) {
+    nodel_t *slow = head;
+    nodel_t *fast = head -> next;
 
     while (fast && fast -> next) {
         slow = slow -> next;
@@ -666,7 +666,7 @@ static node *get_middle_lista(node *head) {
     return slow;
 }
 
-static node *merge_nodes(node *right, node *left, int (*cmp)(void *a, void *b)) {
+static nodel_t *merge_nodes(nodel_t *right, nodel_t *left, int (*cmp)(void *a, void *b)) {
     if (left == NULL) {
         return right;
     }
@@ -675,7 +675,7 @@ static node *merge_nodes(node *right, node *left, int (*cmp)(void *a, void *b)) 
         return left;
     }
 
-    node *final_head = NULL;
+    nodel_t *final_head = NULL;
 
     if (cmp(left -> data, right -> data) <= 0) {
         final_head = left;
@@ -687,7 +687,7 @@ static node *merge_nodes(node *right, node *left, int (*cmp)(void *a, void *b)) 
 
     final_head -> prev = NULL;
 
-    node *tail = final_head;
+    nodel_t *tail = final_head;
 
 
     while (left != NULL && right != NULL) {
@@ -715,11 +715,11 @@ static node *merge_nodes(node *right, node *left, int (*cmp)(void *a, void *b)) 
     return final_head;
 }
 
-static node *recursive_sort(node *head, int (*cmp)(void *a, void *b)) {
+static nodel_t *recursive_sort(nodel_t *head, int (*cmp)(void *a, void *b)) {
     if (head == NULL || head -> next == NULL) return head;
 
-    node *mid = get_middle_lista(head);
-    node *right_head = mid -> next;
+    nodel_t *mid = get_middle_lista(head);
+    nodel_t *right_head = mid -> next;
 
     mid -> next = NULL;
 
@@ -727,17 +727,17 @@ static node *recursive_sort(node *head, int (*cmp)(void *a, void *b)) {
         right_head -> prev = NULL;
     }
 
-    node *sorted_left = recursive_sort(head, cmp);
-    node *sorted_right = recursive_sort(right_head, cmp);
+    nodel_t *sorted_left = recursive_sort(head, cmp);
+    nodel_t *sorted_right = recursive_sort(right_head, cmp);
 
     return merge_nodes(sorted_left, sorted_right, cmp);
 }
 
-void merge_sort_lista(lista *l, int (*cmp)(void *a, void *b)) {
+void merge_sort_lista(lista_t *l, int (*cmp)(void *a, void *b)) {
     if (l == NULL || l -> tam <= 1) return;
     l -> head = recursive_sort(l -> head, cmp);
 
-    node *tail = l -> head;
+    nodel_t *tail = l -> head;
 
     if (tail != NULL) {
         while (tail -> next != NULL) {
