@@ -41,7 +41,7 @@ graph_t *graph_init(void (*comparator)(void *a, void *b),
     graph_t *graph = malloc(sizeof(graph_t));
     assert(graph != NULL);
 
-    graph -> vertices = exhash_init(sizeof(vertex_t *), 128);
+    graph -> vertices = exhash_init(sizeof(vertex_t *), 512);
 
     graph -> comparator = comparator;
     graph -> destructor_edge_data = destructor_edge_data;
@@ -86,5 +86,43 @@ static int cmp_target_edge(void *edge, void *target_edge) {
     return strcmp(c -> id, wanted_id);
 }
 
+
 bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *target_id) {
+    assert(g != NULL && data != NULL && src_id != NULL && target_id != NULL);
+
+    // Aloca memória e procura o vértice de origem no hashmap do grafo
+    vertex_t *src_v = malloc(sizeof(vertex_t));
+    exhash_search(g -> vertices, src_id, &src_v);
+
+    // Aloca memória e procura o vértice de destino no hashmap do grafo
+    vertex_t *target_v = malloc(sizeof(vertex_t));
+    exhash_search(g -> vertices, target_id, &target_v);
+
+
+    // Se um dos vértices não existir, não é possível
+    // criar a aresta, pois ela já existe
+    if (!src_v || !target_v) return false;
+
+    // Checa se já existe uma aresta idêntica, caso exista, não cria nova aresta
+    if (search_lista(src_v -> adjacent, ((void *)target_id), cmp_target_edge)) {
+        return false;
+    }
+
+    // Cria nova aresta DIRECIONADA e preenche suas informações
+    edge_t *new_edge = malloc (sizeof(edge_t));
+    assert(new_edge != NULL);
+
+    new_edge -> target_id = malloc (strlen(target_id) + 1);
+    strncpy(new_edge -> target_id, target_id, strlen(target_id) + 1);
+
+    new_edge -> id = NULL;
+    new_edge -> data = data;
+
+    // Insere a aresta na lista de adjacência do vértice de origem
+    // Nova aresta parte de src_v para target_v
+    insert_tail(src_v -> adjacent, new_edge);
+
+    return true;
+
+
 }
