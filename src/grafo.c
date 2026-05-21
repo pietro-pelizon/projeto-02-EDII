@@ -9,6 +9,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+// ======= Declarações estáticas ========
+
+static void remove_neighbors_edges(void *record_data, void *context);
+
+// Struct para transportar o ID alvo e a função de free do grafo
+// Como a exhash_foreach precisa de um callback fixo, precisamos de uma nova
+// struct que representa os dados que a função recebe
+typedef struct stContext{
+    const char *target_id;
+    void (*destructor_edge_data)(void *);
+} ctx_remove_t;
+
 // Vértice genérico para guardar qualquer tipo de dado
 typedef struct stVertex {
     char *id;
@@ -87,7 +99,7 @@ static int cmp_target_edge(void *edge, void *target_edge) {
 }
 
 
-bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *target_id) {
+bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *target_id, char *street_name) {
     assert(g != NULL && data != NULL && src_id != NULL && target_id != NULL);
 
     // Aloca memória e procura o vértice de origem no hashmap do grafo
@@ -115,7 +127,7 @@ bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *targ
     new_edge -> target_id = malloc (strlen(target_id) + 1);
     strncpy(new_edge -> target_id, target_id, strlen(target_id) + 1);
 
-    new_edge -> id = NULL;
+    new_edge -> id = street_name;
     new_edge -> data = data;
 
     // Insere a aresta na lista de adjacência do vértice de origem
@@ -123,6 +135,135 @@ bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *targ
     insert_tail(src_v -> adjacent, new_edge);
 
     return true;
+}
+
+bool is_adjacente(graph_t *g, const char *id_v, const char *id_u) {
+    assert(g != NULL && id_v != NULL && id_u != NULL);
+
+    vertex_t *v = malloc (sizeof(vertex_t));
+    exhash_search(g -> vertices, id_v, &v);
+
+    vertex_t *u = malloc(sizeof(vertex_t));
+    exhash_search(g -> vertices, id_u, &u);
+
+    // Caso um dos dois vértices, impossível checar adjacência
+    // então assumimos que é false
+    if (!v || !u) return false;
+
+    // Procura na lista de adjacência de V se existe o vértice U
+    if (search_lista(v -> adjacent, ((void *)id_u), cmp_target_edge)) {
+        return true;
+    }
+
+    return false;
+}
+
+vertex_t *graph_get_vertex(graph_t *g, const char *vertex_id) {
+    assert(g != NULL && vertex_id != NULL);
+
+    vertex_t *v = NULL;
+
+    if (!exhash_search(g -> vertices, vertex_id, &v)) {
+        fprintf(stderr, "Vértice de ID %s não encontrado.\n", vertex_id);
+        return NULL;
+    }
+
+    return v;
+}
+
+edge_t *graph_get_edge(graph_t *g, const char *src_id, const char *target_id) {
+    assert(g != NULL);
+
+    vertex_t *src_v = NULL;
+
+    // Acha o vértice de origem em O(1)
+    exhash_search(g -> vertices, src_id, &src_v);
+    if (!src_v) return NULL;
+
+    // Busca a aresta na lista dele usando a função de procurar na lista
+    return search_lista(src_v -> adjacent, (void *)target_id, cmp_target_edge);
+}
+
+bool graph_remove_edge(graph_t *g, const char *src_id, const char *target_id) {
+    assert(g != NULL);
+
+    edge_t *e = graph_get_edge(g, src_id, target_id);
+    if (!e) return false;
+
+    g -> destructor_edge_data(e);
+
+    return true;
+}
+
+bool graph_remove_vertex(graph_t *g, const char *vertex_id) {
+    assert(g != NULL);
+
+    // Acha o vértice desejado
+    vertex_t *v = graph_get_vertex(g, vertex_id);
+    if (!v) return false;
+
+    // Remove cada aresta associada ao vértice a ser destruído
+    ctx_remove_t context = { vertex_id, g -> destructor_edge_data };
+    exhash_foreach(g -> vertices, remove_neighbors_edges, &context);
+
+    // Itera pela sua lista de adjacência destruindo as arestas
+    free_lista(v -> adjacent, g -> destructor_edge_data);
+
+    // Remove id e dados
+    free(v -> id);
+    if (g -> destructor_vertex_data && v -> data) {
+        g -> destructor_vertex_data(v);
+    }
+
+    // Remove o vértice em si
+    free(v);
+
+    // Remove o vértice do hashmap geral do grafo
+    void *removed = exhash_remove(g -> vertices, vertex_id);
+    free(removed);
+
+    return true;
+}
+
+lista_t *graph_get_neighbors(graph_t *g, const char *vertex_id) {
+    assert(g != NULL);
+
+    vertex_t *v = graph_get_vertex(g, vertex_id);
+    if (!v) return NULL;
+
+    return v -> adjacent;
+}
+
+void graph_destroy(graph_t *g) {
+    assert (g != NULL);
+
+static edge_destroy_internal(void *edge_data) {
+    edge_t *e = edge_data;
+
+    free(e -> id);
+}
 
 
 }
+
+// O callback que será chamado para CADA vértice do grafo
+static void remove_neighbors_edges(void *record_data, void *context) {
+    //Como o exhash guarda ponteiros, record_data é um (vertex_t **)
+    vertex_t *v = *(vertex_t **)record_data;
+    ctx_remove_t *ctx = (ctx_remove_t *)context;
+
+    // Tenta remover a aresta que aponta para o vértice que está morrendo
+    edge_t *aresta_removida = remove_first_data(v -> adjacent, (void *)ctx -> target_id, cmp_target_edge);
+
+    if (aresta_removida) {
+        free(aresta_removida -> target_id);
+        if (ctx -> destructor_edge_data && aresta_removida -> data) {
+            ctx -> destructor_edge_data(aresta_removida -> data);
+        }
+        free(aresta_removida);
+    }
+}
+
+
+
+
