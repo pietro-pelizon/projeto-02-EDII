@@ -143,6 +143,35 @@ void *exhash_remove(const exhash_t *map, const char *key) {
     return NULL;
 }
 
+void exhash_foreach(const exhash_t *map, void (*action)(void *data, void *context), void *context) {
+    if (!map || !action) return;
+
+    uint64_t size = dir_size(map);
+    bucket_t **visited = calloc(size, sizeof(bucket_t *));
+    uint64_t n_visited = 0;
+    uint64_t sz = slot_size(map);
+
+    for (uint64_t i = 0; i < size; i++) {
+        bucket_t *b = map -> directory[i];
+        bool already = false;
+
+        for (uint64_t v = 0; v < n_visited; v++) {
+            if (visited[v] == b) { already = true; break; }
+        }
+
+        if (!already) {
+            visited[n_visited++] = b;
+
+            // Itera pelos registros dentro do balde único
+            for (uint16_t r = 0; r < b -> record_count; r++) {
+                void *record_data = b -> data + r * sz + sizeof(uint64_t);
+                action(record_data, context);
+            }
+        }
+    }
+    free(visited);
+}
+
 void exhash_destroy(exhash_t *map) {
     if (map == NULL) return;
 
