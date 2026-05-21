@@ -38,6 +38,12 @@ bool exhash_search(const exhash_t *map, const char *key, void *out_data);
 /// @return Ponteiro alocado com o dado removido (exige free() posterior) ou NULL se não achar.
 void *exhash_remove(const exhash_t *map, const char *key);
 
+/// @brief Itera por todos os elementos únicos do hash e aplica uma função.
+/// @param map Ponteiro para o hash.
+/// @param action Função callback que será aplicada a cada elemento.
+/// @param context Ponteiro genérico para passar dados extras para o callback.
+void exhash_foreach(const exhash_t *map, void (*action)(void *data, void *context), void *context);
+
 /// @brief Libera toda a memória RAM utilizada pelo Hash Map (diretório, baldes e dados).
 /// @param map Ponteiro para o Hash Map.
 void exhash_destroy(exhash_t *map);
