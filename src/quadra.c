@@ -1,8 +1,7 @@
 #include <assert.h>
-#include <string.h>
-
 #include <stdlib.h>
-
+#include <string.h>
+#include "utils.h"
 
 typedef struct stQuadra {
     char *cep;
@@ -21,7 +20,7 @@ quadra_t *quadra_init(const char *cep, double x, double y, double w, double h) {
     quadra_t *nova_quadra = calloc(1, sizeof(quadra_t));
     assert(nova_quadra != NULL);
 
-    nova_quadra -> cep = strdup(cep);
+    nova_quadra -> cep = my_strdup(cep);
     nova_quadra -> x = x;
     nova_quadra -> y = y;
     nova_quadra -> w = w;
@@ -45,7 +44,7 @@ void quadra_destroy(quadra_t *q) {
 void quadra_set_cep(quadra_t *q, const char *novo_cep) {
     assert(q != NULL && novo_cep != NULL);
 
-    q -> cep = strdup(novo_cep);
+    q -> cep = my_strdup(novo_cep);
 }
 
 void quadra_set_x(quadra_t *q, double novo_x) {
@@ -71,7 +70,7 @@ void quadra_set_corp(quadra_t *q, const char *nova_corp) {
         free(q->corp);
     }
 
-    q -> corp = strdup(nova_corp);
+    q -> corp = my_strdup(nova_corp);
 }
 
 void quadra_set_corb(quadra_t *q, const char *nova_corb) {
@@ -81,7 +80,7 @@ void quadra_set_corb(quadra_t *q, const char *nova_corb) {
         free(q -> corb);
     }
 
-    q -> corb = strdup(nova_corb);
+    q -> corb = my_strdup(nova_corb);
 
 }
 
@@ -92,7 +91,7 @@ void quadra_set_sw(quadra_t *q, const char *novo_sw) {
         free(q -> sw);
     }
 
-    q -> sw = strdup(novo_sw);
+    q -> sw = my_strdup(novo_sw);
 }
 
 double quadra_get_x(const quadra_t *q) {

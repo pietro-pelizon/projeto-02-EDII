@@ -1,4 +1,4 @@
-#include "lista.h"
+#include "../include/lista.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "utils.h"
+
 
 typedef struct stRua {
     char *cep_esquerda; // CEP quadra a esquerda
@@ -20,10 +22,9 @@ rua_t *rua_init(const char *cep_esquerda, const char *cep_direita, const char *n
     rua_t *r = malloc(sizeof(rua_t));
     assert(r != NULL);
 
-    // Lembrar que strdup faz malloc implicitamente
-    r -> cep_esquerda = strdup(cep_esquerda);
-    r -> cep_direita = strdup(cep_direita);
-    r -> nome = strdup(nome);
+    r -> cep_esquerda = my_strdup(cep_esquerda);
+    r -> cep_direita = my_strdup(cep_direita);
+    r -> nome = my_strdup(nome);
 
     r -> vm = vm;
     r -> cmp = cmp;
@@ -42,7 +43,7 @@ void set_cep_esquerda(rua_t *r, char *novo_cep_esquerda) {
         free(r -> cep_esquerda);
     }
 
-    r -> cep_esquerda = strdup(novo_cep_esquerda);
+    r -> cep_esquerda = my_strdup(novo_cep_esquerda);
 }
 
 char *get_cep_direita(rua_t *r) {
@@ -56,7 +57,7 @@ void set_cep_direita(rua_t *r, char *novo_cep_direita) {
         free(r -> cep_direita);
     }
 
-    r -> cep_direita = strdup(novo_cep_direita);
+    r -> cep_direita = my_strdup(novo_cep_direita);
 }
 
 char *get_nome(rua_t *r) {
@@ -70,7 +71,7 @@ void set_nome(rua_t *r, char *novo_nome) {
         free(r -> nome);
     }
 
-    r -> nome = strdup(novo_nome);
+    r -> nome = my_strdup(novo_nome);
 }
 
 double get_vm(rua_t *r) {
