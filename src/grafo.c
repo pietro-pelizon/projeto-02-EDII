@@ -2,16 +2,19 @@
 
 #include <assert.h>
 
-#include "exhash.h"
+#include "../include/exhash.h"
 #include "../include/lista.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// ======= Declarações estáticas ========
+// ======= DECLARAÇÕES STATIC ========
 
 static void remove_neighbors_edges(void *record_data, void *context);
+static void edge_destroy_internal(void *edge_data);
+static void vertex_destroy_internal(void *record_data, void *context);
+
 
 // Struct para transportar o ID alvo e a função de free do grafo
 // Como a exhash_foreach precisa de um callback fixo, precisamos de uma nova
@@ -237,13 +240,50 @@ lista_t *graph_get_neighbors(graph_t *g, const char *vertex_id) {
 void graph_destroy(graph_t *g) {
     assert (g != NULL);
 
-static edge_destroy_internal(void *edge_data) {
-    edge_t *e = edge_data;
+    // Itera e destrói todos os vértices e suas respectivas listas de adjacência
+    exhash_foreach(g -> vertices, vertex_destroy_internal, g);
 
-    free(e -> id);
+    // Destrói a estrutura raiz do Hash Map (Diretório e Baldes)
+    exhash_destroy(g -> vertices);
+
+    // Libera a raiz do grafo
+    free(g);
+
 }
 
 
+// ======= IMPLEMENTAÇÕES STATIC ========
+
+
+static void edge_destroy_internal(void *edge_data) {
+    edge_t *e = edge_data;
+
+    if (e -> target_id) {
+        free(e -> target_id);
+    }
+
+    free(e -> id);
+
+    free(e);
+}
+
+static void vertex_destroy_internal(void *record_data, void *context) {
+    vertex_t *v = *(vertex_t **)record_data;
+    graph_t *g = (graph_t *)context;
+
+    // Destrói todas as arestas que saem deste vértice
+    if (v -> adjacent) {
+        free_lista(v -> adjacent, edge_destroy_internal);
+    }
+
+    // Destrói o payload do vértice (struct quadra/coordenadas)
+    if (g -> destructor_vertex_data && v -> data) {
+        g -> destructor_vertex_data(v -> data);
+    }
+
+    // Libera os componentes do vértice
+    if (v -> id) free(v -> id);
+    free(v);
 }
 
 // O callback que será chamado para CADA vértice do grafo
