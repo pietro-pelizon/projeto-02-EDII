@@ -10,14 +10,7 @@
 #include <string.h>
 
 #include "../include/exhash.h"
-
-// já que o campo de dados do vértice é genérico,
-// precisamos dessa struct para encapsular as coordenadas
-// atribuídas a ele
-typedef struct stEsquina_t {
-    double x, y;
-}esquina_t;
-
+#include "../include/ponto.h"
 
 static void comando_v(char *linha_lida, graph_t *g);
 static void comando_e(char *linha_lida, graph_t *g);
@@ -60,13 +53,10 @@ static void comando_v(char *linha_lida, graph_t *g) {
 
     sscanf(linha_lida, "v %15s %lf %lf", id, &x, &y);
 
-    esquina_t *e = malloc(sizeof(esquina_t));
-    assert(e);
+    ponto_t *p = ponto_init(x, y);
+    assert(p);
 
-    e -> x = x;
-    e -> y = y;
-
-    graph_add_vertex(g, e, id);
+    graph_add_vertex(g, p, id);
 
 }
 
