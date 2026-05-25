@@ -89,3 +89,13 @@ double get_cmp(rua_t *r) {
 void set_cmp(rua_t *r, double novo_cmp) {
     r -> cmp = novo_cmp;
 }
+
+void rua_destroy(rua_t *r) {
+    assert(r);
+
+    free(r -> cep_direita);
+    free(r -> cep_esquerda);
+    free(r -> nome);
+
+    free(r);
+}
