@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "utils.h"
+
 // ======= DECLARAÇÕES STATIC ========
 
 static void remove_neighbors_edges(void *record_data, void *context);
@@ -43,7 +45,7 @@ typedef struct stEdge {
 // qualquer tipo dos dados contidos na aresta e vértice
 typedef struct stGraph {
     exhash_t *vertices;
-
+    int nv; // Número de vértices totais que o grafo ira conter
     void (*comparator)(void *a, void *b);
     void (*destructor_edge_data)(void *data);
     void (*destructor_vertex_data)(void *data);
@@ -57,6 +59,8 @@ graph_t *graph_init(void (*comparator)(void *a, void *b),
     assert(graph != NULL);
 
     graph -> vertices = exhash_init(sizeof(vertex_t *), 512);
+
+    graph -> nv = 0;
 
     graph -> comparator = comparator;
     graph -> destructor_edge_data = destructor_edge_data;
@@ -130,7 +134,7 @@ bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *targ
     new_edge -> target_id = malloc (strlen(target_id) + 1);
     strncpy(new_edge -> target_id, target_id, strlen(target_id) + 1);
 
-    new_edge -> id = street_name;
+    new_edge -> id = my_strdup(street_name);
     new_edge -> data = data;
 
     // Insere a aresta na lista de adjacência do vértice de origem
@@ -251,6 +255,63 @@ void graph_destroy(graph_t *g) {
 
 }
 
+int graph_get_nv(graph_t *g) {
+    return g -> nv;
+}
+
+void graph_set_nv(graph_t *g, int novo_nv) {
+    g -> nv = novo_nv;
+}
+
+exhash_t *graph_get_exhash(graph_t *g) {
+    return g -> vertices;
+}
+
+// Struct para poder passar as informações para o graph_foreach_vertex
+typedef struct {
+    void (*user_callback)(const char *, void *, lista_t *, void *);
+    void *user_ctx;
+} internal_ctx_t;
+
+// Wrapper que será declarado só aqui nesse módulo
+// para encapsular a lógica da função pública
+static void internal_foreach_wrapper(void *record_data, void *context) {
+    vertex_t *v = record_data;
+    internal_ctx_t *ctx = context;
+
+    if (ctx -> user_callback) {
+        ctx -> user_callback(v -> id, v -> data, v -> adjacent, ctx -> user_ctx);
+    }
+}
+
+
+// Função pública para iterar sobre os vértices sem quebrar a opacidade
+void graph_foreach_vertex(graph_t *g, void (*callback)(const char *id, void *vertex_data, lista_t *adjacent, void *context), void *context) {
+    assert(g && g -> vertices && callback);
+
+    // Ponte para os outros módulos
+    internal_ctx_t bridge = {callback, context};
+
+    exhash_foreach(g -> vertices, internal_foreach_wrapper, &bridge);
+}
+
+void *vertex_get_data(vertex_t *v) {
+    assert(v);
+
+    return v -> data;
+}
+
+const char *edge_get_target_id(edge_t *e) {
+    assert(e);
+
+    return e -> target_id;
+}
+
+void *edge_get_data(edge_t *e) {
+    assert(e);
+
+    return e -> data;
+}
 
 // ======= IMPLEMENTAÇÕES STATIC ========
 
