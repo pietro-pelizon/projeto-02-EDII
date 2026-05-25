@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "utils.h"
@@ -8,6 +9,7 @@ typedef struct stQuadra {
     char *corb;
     char *corp;
     char *sw;
+    char faces[4];
     double x, y, w, h;
 
 } quadra_t;
@@ -148,4 +150,35 @@ void quadra_set_cq(quadra_t *q, const char *sw, const char *corp, const char *co
     quadra_set_sw(q, sw);
     quadra_set_corb(q, corb);
     quadra_set_corp(q, corp);
+}
+
+void quadra_get_coord(char face, double *x, double *y, quadra_t *quadra, double numero) {
+    double qx = quadra_get_x(quadra);
+    double qy = quadra_get_y(quadra);
+    double qw = quadra_get_w(quadra);
+    double qh = quadra_get_h(quadra);
+
+    switch (face) {
+        case 'S': {
+            *x = qx + numero;
+            *y = qy;
+            break;
+        }
+        case 'N': {
+            *x = qx + numero;
+            *y = qy + qh;
+            break;
+        }
+        case 'L': {
+            *x = qx;
+            *y = qy + numero;
+            break;
+        }
+        case 'O': {
+            *x = qx + qw;
+            *y = qy + numero;
+            break;
+        }
+        default: printf("Face %c inválida!\n", face);
+    }
 }

@@ -118,4 +118,12 @@ double quadra_get_h(const quadra_t *q);
 /// @param corp Cor de preenchimento (cfill).
 void quadra_set_cq(quadra_t *q, char *sw, const char *corp,  const char *corb);
 
+/// @brief Faz o cálculos necessários para achar determinado ponto a partir da quadra
+/// @param face Face desejada
+/// @param x Coordenada x que será "retornada"
+/// @param y Coordenada y que será "retornada"
+/// @param quadra Ponteiro para a quadra
+/// @param numero Número da "casa"
+void quadra_get_coord(char face, double *x, double *y, quadra_t *quadra, double numero);
+
 #endif //PROJETO_01_EDII_QUADRA_H
