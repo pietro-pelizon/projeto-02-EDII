@@ -18,6 +18,7 @@ typedef struct stPriorityQueue{
 }pqueue_t;
 
 static void heapify_up(pqueue_t *pq, int index);
+static void heapify_down(pqueue_t *pq);
 static void pq_swap_nodes(pq_node_t *a, pq_node_t *b);
 
 pqueue_t *pq_init(int initial_capacity) {
@@ -70,11 +71,42 @@ void pq_enqueue(pqueue_t *pq, const char *id, double priority) {
 
 }
 
-// TODO
-char *pq_dequeue(pqueue_t *pq);
+char *pq_dequeue(pqueue_t *pq) {
+    assert(pq);
 
-// TODO
-void pq_destroy(pqueue_t *pq);
+    // Se a fila estiver vazia, retorna NULL
+    if (pq_is_empty(pq)) return NULL;
+
+    // Salva o ID da primeira posição;
+    char *return_id = pq -> array[0].id;
+
+    // Sobrescreve a primeira posição com o dado na última posição
+    pq -> array[0] = pq -> array[pq -> size - 1];
+
+    pq -> size--;
+
+
+    heapify_down(pq);
+
+    return return_id;
+
+}
+
+void pq_destroy(pqueue_t *pq) {
+    assert(pq);
+
+    if (pq -> array == NULL) return;
+
+    for (int i = 0; i < pq -> size; i++) {
+
+        if (pq -> array[i].id) {
+            free(pq -> array[i].id);
+        }
+    }
+
+    free(pq -> array);
+    free(pq);
+}
 
 
 // Troca nó para a inserção e remoção
@@ -103,5 +135,34 @@ static void heapify_up(pqueue_t *pq, int index) {
         else {
             break;
         }
+    }
+}
+
+// Como trocamos o último nó da fila pelo nó da posição inicial,
+// Agora precisamos que esse nó vá para a posição correta para
+// Preservar a lógica de minimum heap da fila de prioridade
+static void heapify_down(pqueue_t *pq) {
+    assert(pq);
+
+    int current_index = 0;
+
+    while ((current_index * 2) + 1 < pq -> size) {
+        int left_index = (current_index * 2) + 1;
+        int right_index = (current_index * 2) + 2;
+
+        int min = left_index;
+
+        if (right_index < pq -> size && pq -> array[right_index].priority < pq -> array[left_index].priority) {
+            min = right_index;
+        }
+
+        if (pq -> array[current_index].priority <= pq -> array[min].priority) {
+            break;
+
+        }
+
+        pq_swap_nodes(&pq -> array[current_index], &pq -> array[min]);
+
+        current_index = min;
     }
 }
