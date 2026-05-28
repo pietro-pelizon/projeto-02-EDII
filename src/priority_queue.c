@@ -3,8 +3,11 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "utils.h"
+
+#include "limits.h"
 
 typedef struct stNodePq{
     char *id; // CEP da quadra
@@ -18,16 +21,20 @@ typedef struct stPriorityQueue{
 }pqueue_t;
 
 static void heapify_up(pqueue_t *pq, int index);
-static void heapify_down(pqueue_t *pq);
+static void heapify_down(pqueue_t *pq, int current_index);
 static void pq_swap_nodes(pq_node_t *a, pq_node_t *b);
 
 pqueue_t *pq_init(int initial_capacity) {
-    if (initial_capacity <= 0) return NULL;
 
     pqueue_t *pq = malloc(sizeof(pqueue_t));
     assert(pq != NULL);
 
     pq -> size = 0;
+
+    if (initial_capacity < 0) {
+        pq -> capacity = INT_MAX;
+    }
+
     pq -> capacity = initial_capacity;
 
     // Aloca o vetor interno da fila com "initial_capacity" capacidade
@@ -46,6 +53,14 @@ bool pq_is_empty(const pqueue_t *pq) {
     assert(pq != NULL);
 
     if (pq -> size == 0) {
+        return true;
+    }
+
+    return false;
+}
+
+bool pq_is_full(const pqueue_t *pq) {
+    if (pq -> size == pq -> capacity) {
         return true;
     }
 
@@ -86,10 +101,39 @@ char *pq_dequeue(pqueue_t *pq) {
     pq -> size--;
 
 
-    heapify_down(pq);
+    heapify_down(pq, 0);
 
     return return_id;
 
+}
+
+void pq_change_priority(pqueue_t *pq, const char *id, double new_priority) {
+    assert(pq != NULL);
+
+    // Busca pelo ID na fila
+    int target_index = -1;
+    for (int i = 0; i < pq -> size; i++) {
+        if (strcmp(pq -> array[i].id, id) == 0) {
+            target_index = i;
+            break;
+        }
+    }
+
+    // Se o vértice não está na fila, não faz nada
+    if (target_index == -1) return;
+
+    // Atualiza a prioridade
+    double old_priority = pq -> array[target_index].priority;
+    pq -> array[target_index].priority = new_priority;
+
+    // Corrige o Min-Heap
+    if (new_priority < old_priority) {
+        // Se a distância encurtou, sobe na árvore
+        heapify_up(pq, target_index);
+    } else {
+        // Se a distância aumentou, desce na árvore
+        heapify_down(pq, target_index);
+    }
 }
 
 void pq_destroy(pqueue_t *pq) {
@@ -118,7 +162,7 @@ static void pq_swap_nodes(pq_node_t *a, pq_node_t *b) {
 
 // Como a fila segue uma implementação utilizando minimum heap,
 // comparamos a prioridade do nó filho com a do nó pai que está
-// sempre a (i - 1)/2 posições de seu filho e. se o valor guardado
+// sempre a (i - 1)/2 posições de seu filho e, se o valor guardado
 // no pai for maior, trocamos ele de posição. A função roda até
 // o nó alcançar a raiz ou algum nó pai tiver um valor menor
 static void heapify_up(pqueue_t *pq, int index) {
@@ -141,10 +185,8 @@ static void heapify_up(pqueue_t *pq, int index) {
 // Como trocamos o último nó da fila pelo nó da posição inicial,
 // Agora precisamos que esse nó vá para a posição correta para
 // Preservar a lógica de minimum heap da fila de prioridade
-static void heapify_down(pqueue_t *pq) {
+static void heapify_down(pqueue_t *pq, int current_index) {
     assert(pq);
-
-    int current_index = 0;
 
     while ((current_index * 2) + 1 < pq -> size) {
         int left_index = (current_index * 2) + 1;
