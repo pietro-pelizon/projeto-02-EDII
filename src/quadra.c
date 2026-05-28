@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "ponto.h"
 #include "utils.h"
 
 typedef struct stQuadra {
@@ -9,8 +11,8 @@ typedef struct stQuadra {
     char *corb;
     char *corp;
     char *sw;
-    char faces[4];
-    double x, y, w, h;
+    ponto_t *p;
+    double w, h;
 
 } quadra_t;
 
@@ -23,8 +25,8 @@ quadra_t *quadra_init(const char *cep, double x, double y, double w, double h) {
     assert(nova_quadra != NULL);
 
     nova_quadra -> cep = my_strdup(cep);
-    nova_quadra -> x = x;
-    nova_quadra -> y = y;
+    ponto_set_x(nova_quadra -> p, x);
+    ponto_set_y( nova_quadra -> p, y);
     nova_quadra -> w = w;
     nova_quadra -> h = h;
 
@@ -38,6 +40,7 @@ void quadra_destroy(quadra_t *q) {
     free(q -> corb);
     free(q -> corp);
     free(q -> sw);
+    free(q -> p);
 
     free(q);
 }
@@ -50,11 +53,11 @@ void quadra_set_cep(quadra_t *q, const char *novo_cep) {
 }
 
 void quadra_set_x(quadra_t *q, double novo_x) {
-    q -> x = novo_x;
+    ponto_set_x(q -> p, novo_x);
 }
 
 void quadra_set_y(quadra_t *q, double novo_y) {
-    q -> y = novo_y;
+    ponto_set_y(q -> p, novo_y);
 }
 
 void quadra_set_w(quadra_t *q, double novo_w) {
@@ -69,7 +72,7 @@ void quadra_set_corp(quadra_t *q, const char *nova_corp) {
     assert(q != NULL && nova_corp != NULL);
 
     if (q -> corp != NULL) {
-        free(q->corp);
+        free(q -> corp);
     }
 
     q -> corp = my_strdup(nova_corp);
@@ -99,13 +102,14 @@ void quadra_set_sw(quadra_t *q, const char *novo_sw) {
 double quadra_get_x(const quadra_t *q) {
     assert(q != NULL);
 
-    return q -> x;
+    return ponto_get_x(q -> p);
 }
 
 double quadra_get_y(const quadra_t *q) {
     assert(q != NULL);
 
-    return q -> y;
+    return ponto_get_y(q -> p);
+
 }
 
 double quadra_get_w(const quadra_t *q) {
