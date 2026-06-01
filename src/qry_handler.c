@@ -22,12 +22,22 @@
 #include "../include/ponto.h"
 #include "../include/rua.h"
 
+static void descobre_componente_conexo(const char *id_start, void *v_data, lista_t *adj_start, void *context);
 
 typedef struct stRegistrador {
     char *id; // Identificador do registrador para achar na lista
     ponto_t *p; // coordenada (x, y)
 }registrador_t;
 
+// Outra struct de contexto para poder passar para nossa
+// função de iterar pelos vértices do vetor, agora no comando 'regs'
+typedef struct {
+    double vl;
+    exhash_t *visitados;    // Guarda a informação de quais vértices já foram visitados,
+    graph_t *g;             // evitando passar pelo mesmo vértice duas vezes
+    int qtd_componentes;
+    FILE *svg;
+}regs_ctx_t;
 
 static int cmp_registradores(void *a, void *b) {
     registrador_t *reg = a;
@@ -48,10 +58,6 @@ typedef struct stContextoMvm {
     double nova_vm;
     graph_t *g;
 } mvm_ctx_t;
-
-
-
-
 
 static void comando_ao(char *linha_atual, exhash_t *quadras, lista_t *registradores, FILE *svg, FILE *txt) {
     char id_reg[16], cep[32], face;
@@ -165,4 +171,25 @@ static void comando_mvm(char *linha_atual, graph_t *g) {
     graph_foreach_vertex(g, atualiza_vm_aresta, &contexto);
 }
 
+static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg) {
+    double vm_ignorada = 0;
+
+    // Coleta os dados da linha atual
+    sscanf(linha_atual, "regs %lf", &vm_ignorada);
+
+    // Cria um hashmap temporário só para guardar as strings dos IDs visitados
+    exhash_t *visitados = exhash_init(sizeof(int), graph_get_nv(g));
+
+    regs_ctx_t contexto = {vm_ignorada, visitados, g, 0, svg};
+
+    // Manda o grafo varrer TODOS os vértices
+    graph_foreach_vertex(g, descobre_componente_conexo, &contexto);
+
+    // Gravando no .txt
+    fprintf(txt, "[*] regs %lf\n", vm_ignorada);
+    fprintf(txt, "%d\n", contexto.qtd_componentes);
+
+    // Destruindo hashmap temporário
+    exhash_destroy(visitados);
+}
 
