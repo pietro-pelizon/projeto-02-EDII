@@ -38,7 +38,7 @@ pqueue_t *pq_init(int initial_capacity) {
     pq -> capacity = initial_capacity;
 
     // Aloca o vetor interno da fila com "initial_capacity" capacidade
-    pq -> array = malloc(sizeof(pqueue_t) * initial_capacity);
+    pq -> array = malloc(sizeof(pq_node_t) * initial_capacity);
     assert(pq -> array != NULL);
 
     if (!pq -> array) {
