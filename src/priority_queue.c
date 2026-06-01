@@ -33,9 +33,10 @@ pqueue_t *pq_init(int initial_capacity) {
 
     if (initial_capacity < 0) {
         pq -> capacity = INT_MAX;
+    } else {
+        pq -> capacity = initial_capacity;
     }
 
-    pq -> capacity = initial_capacity;
 
     // Aloca o vetor interno da fila com "initial_capacity" capacidade
     pq -> array = malloc(sizeof(pq_node_t) * initial_capacity);
@@ -70,7 +71,15 @@ bool pq_is_full(const pqueue_t *pq) {
 void pq_enqueue(pqueue_t *pq, const char *id, double priority) {
     assert(pq != NULL);
 
-    if (pq -> size >= pq -> capacity) return;
+    // Se o tamanho excedeu a capacidade,
+    // aumenta a capacidade usando realloc no vetor interno
+    if (pq -> size >= pq -> capacity) {
+        pq -> capacity *= 2;
+        // Realloc seguro
+        pq_node_t *arr = realloc(pq -> array, sizeof(pq_node_t) * pq -> capacity);
+        pq -> array = arr;
+        assert(pq -> array != NULL);
+    }
 
     // A inserção ocorre sempre no final da fila
     int current_index = pq -> size;
@@ -93,7 +102,8 @@ char *pq_dequeue(pqueue_t *pq) {
     if (pq_is_empty(pq)) return NULL;
 
     // Salva o ID da primeira posição;
-    char *return_id = pq -> array[0].id;
+    char *return_id = my_strdup(pq -> array[0].id);
+    free(pq -> array[0].id);
 
     // Sobrescreve a primeira posição com o dado na última posição
     pq -> array[0] = pq -> array[pq -> size - 1];
