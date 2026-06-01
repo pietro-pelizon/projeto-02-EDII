@@ -165,9 +165,9 @@ void pq_destroy(pqueue_t *pq) {
 
 // Troca nó para a inserção e remoção
 static void pq_swap_nodes(pq_node_t *a, pq_node_t *b) {
-    pq_node_t *temp = a;
+    pq_node_t temp = *a;
     *a = *b;
-    *b = *temp;
+    *b = temp;
 }
 
 // Como a fila segue uma implementação utilizando minimum heap,
