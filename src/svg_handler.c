@@ -1,9 +1,8 @@
 #include "../include/svg_handler.h"
 
-#include "exhash.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "quadra.h"
+#include "../include/quadra.h"
 
 FILE *svg_init(const char* caminho_arquivo) {
 	FILE *svg = fopen(caminho_arquivo, "w");
@@ -51,4 +50,12 @@ void fecha_svg(FILE *svg) {
 void pos_endereco(FILE *svg, double x, double y, char *id) {
 	fprintf(svg, "<line x1=\"%.2lf\" y1=\"%.2lf\" x2=\"%.2lf\" y2=\"10\" stroke=\"red\" stroke-dasharray=\"5,5\" />\n", x, y, x);
 	fprintf(svg, "<text x=\"%.2lf\" y=\"10\" fill=\"red\" font-size=\"12\">%s</text>\n", x, id);
+}
+
+void rect_componente_conexo(FILE *svg, char *cor, double min_x, double min_y, double max_x, double max_y){
+	double height = max_x - min_x;
+	double width = max_y - min_y;
+
+	fprintf(svg, "<rect x=\"%.2lf\" y=\"%.2lf\" width=\"%.2lf\" height=\"%.2lf\" fill=\"%s\" fill-opacity=\"0.5\" stroke=\"%s\" stroke-width=\"2\" />\n",
+			min_x, min_y, width, height, cor, cor);
 }
