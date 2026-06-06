@@ -193,3 +193,85 @@ static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg) {
     exhash_destroy(visitados);
 }
 
+// Basicamente uma operação de BFS só que com o critério
+// de só considerar ruas com velocidade média ≥ vl
+static void descobre_componente_conexo(const char *id_start, void *v_data, lista_t *adj_start, void *context) {
+    assert(id_start != NULL && v_data != NULL && adj_start != NULL && context != NULL);
+
+    regs_ctx_t *ctx = context;
+
+    // Se o exhash_destroy(visitados) retorna true, o vértice está presente no hashmap, já o visitamos, então encerra a função
+    if (exhash_search(ctx -> visitados, id_start, NULL)) {
+        return;
+    }
+
+    // Aumenta o contador de componentes
+    ctx -> qtd_componentes++;
+
+    double min_x = DBL_MAX, min_y = DBL_MAX;
+    double max_x = DBL_MIN, max_y = DBL_MIN;
+
+    lista_t *bfs_fila = init_lista();
+    assert(bfs_fila != NULL);
+
+    // Enfileira a origem
+    insert_tail(bfs_fila, (void*)id_start);
+
+    // Marca a origem como visitada no hashmap
+    int dummy = 1;
+    exhash_insert(ctx -> visitados, &dummy, id_start);
+
+    while (get_head_node(bfs_fila) != NULL) {
+
+        // Remove o ID do início da lista
+        char *id_atual = remove_head(bfs_fila);
+
+        // Pega as coordenadas para o Bounding Box
+        vertex_t *v_atual = graph_get_vertex(ctx -> g, id_atual);
+        ponto_t *pt_atual = (ponto_t *)vertex_get_data(v_atual);
+        double px = ponto_get_x(pt_atual);
+        double py = ponto_get_y(pt_atual);
+
+        if (px < min_x) min_x = px;
+        if (px > max_x) max_x = px;
+        if (py < min_y) min_y = py;
+        if (py > max_y) max_y = py;
+
+
+        // Pega a lista de adjacência do vértice atual
+        lista_t *adj_atual = graph_get_neighbors(ctx -> g, id_atual);
+
+        // Itera sobre todas as arestas (ruas) que saem desse vértice
+        for (nodel_t *no = get_head_node(adj_atual); no != NULL; no = go_next_node(no)) {
+            edge_t *aresta = get_node_data(no);
+            rua_t *rua = edge_get_data(aresta);
+
+            // Checa se a rua atende o vl especificado
+            if (get_vm(rua) >= ctx -> vl) {
+                const char *id_destino = edge_get_target_id(aresta);
+
+                // Se não foi visitado, adiciona no exhash de visitados
+                if (!exhash_search(ctx -> visitados, id_destino, NULL)) {
+                    exhash_insert(ctx -> visitados, &dummy, id_destino);
+
+                    insert_tail(bfs_fila, (void *)id_destino);
+                }
+            }
+        }
+    }
+
+
+    free_lista(bfs_fila, free);
+
+    // Gera uma cor para cada componente conexo
+    char cor[10];
+    cor_aleatoria(cor);
+
+    // Chama função que cuida da manipulação do (.svg) para esse comando
+    rect_componente_conexo(ctx -> svg, cor, min_x, min_y, max_x, max_y);
+}
+
+static void comando_exp(char *linha_atual, graph_t *g) {
+
+}
+
