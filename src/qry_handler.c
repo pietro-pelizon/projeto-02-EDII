@@ -271,7 +271,114 @@ static void descobre_componente_conexo(const char *id_start, void *v_data, lista
     rect_componente_conexo(ctx -> svg, cor, min_x, min_y, max_x, max_y);
 }
 
-static void comando_exp(char *linha_atual, graph_t *g) {
+// Struct que será utilizada na execução
+// do algoritmo de Kruskal para achar MSTs
+typedef struct {
+    const char *id_origem;
+    const char *id_destino;
+    edge_t *aresta;
+    double comprimento;
+} kruskal_edge_t;
+
+typedef struct {
+    kruskal_edge_t *array;
+    int index;
+}exp_ctx_t;
+
+// Função de callback para algoritmo de Kruskal -
+// Varre o hashmap e coloca todas as arestas (ruas) num array linear
+static void extrai_arestas(const char *id_origem, void *vertex_data, lista_t *adjacent, void *context) {
+    exp_ctx_t *ctx = (exp_ctx_t *)context;
+
+    // Varre todas as ruas que saem desta esquina (vértice)
+    for (nodel_t *no = get_head_node(adjacent); no != NULL; no = go_next_node(no)) {
+        edge_t *aresta = (edge_t *)get_node_data(no);
+        rua_t *rua = (rua_t *)edge_get_data(aresta);
+
+        // Salva tudo na posição atual do array linear
+        ctx -> array[ctx -> index].id_origem = id_origem;
+        ctx -> array[ctx -> index].id_destino = edge_get_target_id(aresta);
+        ctx -> array[ctx -> index].aresta = aresta;
+        ctx -> array[ctx -> index].comprimento = get_cmp(rua);
+
+        ctx -> index++;
+    }
+}
+
+static int compara_cmp_arestas(const void *a, const void *b) {
+    kruskal_edge_t *k1 = (kruskal_edge_t *)a;
+    kruskal_edge_t *k2 = (kruskal_edge_t *)b;
+
+    if (k1 -> comprimento > k2 -> comprimento) {
+        return 1;
+    }
+
+    if (k1 -> comprimento < k2 -> comprimento) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
+    assert (g != NULL && linha_atual != NULL);
+
+    double vl;
+
+    // Lendo a linha e pegando info
+    sscanf(linha_atual, "exp %lf", &vl);
+
+    // Assumindo que pela cidade ser nXn,
+    // o máximo de arestas não passa 4 * total vértices
+    int max_arestas = graph_get_nv(g) * 4;
+
+    // ALocando memória para array de arestas
+    kruskal_edge_t *all_arestas = malloc(max_arestas * sizeof(kruskal_edge_t));
+    assert (all_arestas != NULL);
+
+    // Passando para a struct de contexto
+    exp_ctx_t contexto = {all_arestas, 0};
+
+    // Iterando sobre o grafo e colocando as ruas no array
+    graph_foreach_vertex(g, extrai_arestas, &contexto);
+
+
+    // Ordena as arestas por ordem de tamanho (requerido pelo alg de Kruskal)
+    qsort(contexto.array, contexto.index, sizeof(kruskal_edge_t), compara_cmp_arestas);
+
+    exhash_t *pais = exhash_init(sizeof(char *), graph_get_nv(g));
+
+    // Itera sobre as arestas (ruas) do grafo
+    for (int i = 0; i < contexto.index; i++) {
+        const char *id_origem = contexto.array[i].id_origem;
+        const char *id_destino = contexto.array[i].id_destino;
+
+        // Checa se src e dst já estão interligadas
+        if (strcmp(uf_find(pais, id_origem), uf_find(pais, id_destino)) != 0) {
+
+            // Conecta src e dst (coloca na MST)
+            uf_union(pais, id_origem, id_destino);
+
+            rua_t *rua = edge_get_data(contexto.array[i].aresta);
+
+            // Checa se a rua atende o requisito de vl
+            if (get_vm(rua) < vl) {
+
+                // Se sim, aumenta sua velocidade média em 50%
+                set_vm(rua, get_vm(rua) * 1.5);
+
+                // Chama a função que pinta a aresta de vermelho no (.svg)
+                linha_vermelha_exp(svg, id_origem, id_destino, g);
+
+            }
+        }
+    }
+
+    
+    fprintf(txt, "[*] exp %.2lf\n", vl);
+
+    exhash_destroy(pais);
+    free(contexto.array);
 
 }
 
