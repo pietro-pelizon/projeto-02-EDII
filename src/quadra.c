@@ -25,8 +25,7 @@ quadra_t *quadra_init(const char *cep, double x, double y, double w, double h) {
     assert(nova_quadra != NULL);
 
     nova_quadra -> cep = my_strdup(cep);
-    ponto_set_x(nova_quadra -> p, x);
-    ponto_set_y( nova_quadra -> p, y);
+    nova_quadra -> p = ponto_init(x, y);
     nova_quadra -> w = w;
     nova_quadra -> h = h;
 
@@ -49,6 +48,7 @@ void quadra_destroy(quadra_t *q) {
 void quadra_set_cep(quadra_t *q, const char *novo_cep) {
     assert(q != NULL && novo_cep != NULL);
 
+    free(q -> cep);
     q -> cep = my_strdup(novo_cep);
 }
 
