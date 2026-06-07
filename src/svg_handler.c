@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../include/quadra.h"
+#include "../include/ponto.h"
+#include "../include/grafo.h"
 
 FILE *svg_init(const char* caminho_arquivo) {
 	FILE *svg = fopen(caminho_arquivo, "w");
@@ -58,4 +60,18 @@ void rect_componente_conexo(FILE *svg, char *cor, double min_x, double min_y, do
 
 	fprintf(svg, "<rect x=\"%.2lf\" y=\"%.2lf\" width=\"%.2lf\" height=\"%.2lf\" fill=\"%s\" fill-opacity=\"0.5\" stroke=\"%s\" stroke-width=\"2\" />\n",
 			min_x, min_y, width, height, cor, cor);
+}
+
+void linha_vermelha_exp(FILE *svg, const char *id_origem, const char *id_destino, graph_t *g) {
+	vertex_t *src = graph_get_vertex(g, id_origem);
+	vertex_t *dst = graph_get_vertex(g, id_destino);
+
+	ponto_t *p_src = vertex_get_data(src);
+	ponto_t *p_dst = vertex_get_data(dst);
+
+	double x1 = ponto_get_x(p_src), y1 = ponto_get_y(p_src);
+	double x2 = ponto_get_x(p_dst), y2 = ponto_get_y(p_dst);
+
+	fprintf(svg, "<line x1=\"%.2lf\" y1=\"%.2lf\" x2=\"%.2lf\" y2=\"%.2lf\" stroke=\"red\" stroke-width=\"6\" />\n",
+		x1, y1, x2, y2);
 }
