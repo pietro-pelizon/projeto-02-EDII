@@ -1,11 +1,33 @@
 #ifndef PROJETO_02_EDII_GRAFO_H
 #define PROJETO_02_EDII_GRAFO_H
 
+
+/*
+ * @file grafo.h
+ * @brief Tipo Abstrato de Dados Grafo (Direcionado e Ponderado).
+ *
+ * @details
+ * Estrutura o mapa da cidade gerenciando vértices (esquinas) e arestas (ruas)
+ * de forma universal através de ponteiros genéricos (void *payload).
+ * O módulo foi projetado utilizando a técnica de Ponteiros Opacos (Opaque Pointers)
+ * com alocação dinâmica (Heap), garantindo encapsulamento total e impedindo que
+ * regras de negócio vazem para dentro do TAD. Utiliza tabelas de espalhamento (Hashmap)
+ * para indexação de vértices e listas de adjacência.
+ *
+ * Funcionalidades principais:
+ * - Busca de vértices em tempo constante O(1) através do ID (String).
+ * - Desacoplamento de dados: armazena qualquer tipo de struct via `void *`.
+ * - Travessia segura: varredura do grafo protegida por funções de callback (`foreach`),
+ * impedindo que arquivos externos manipulem os nós internos diretamente.
+ */
+
+
 typedef struct stVertex vertex_t;
 typedef struct stEdge edge_t;
 typedef struct stGraph graph_t;
 
 #include <stdbool.h>
+#include "exhash.h"
 #include "lista.h"
 
 /// @brief Inicializa um grafo com as funções corretas para manipular
@@ -76,5 +98,38 @@ lista_t *graph_get_neighbors(graph_t *g, const char *vertex_id);
 /// @brief Destrói o grafo inteiro, liberando vértices, arestas e estruturas internas
 /// @param g Ponteiro para o grafo a ser destruído
 void graph_destroy(graph_t *g);
+
+/// @param g Ponteiro para o vértice
+/// @return Retorna a quantidade total de vértices que o grafo irá ter
+int graph_get_nv(graph_t *g);
+
+/// @brief Define a quantidade de vértices que o grafo terá
+/// @param g Ponteiro para o grafo
+/// @param novo_nv Quantidade de vértices
+void graph_set_nv(graph_t *g, int novo_nv);
+
+/// @param g Ponteiro para a quadra
+/// @return Retorna o exhash de vértices
+exhash_t *graph_get_exhash(graph_t *g);
+
+/// @brief Aplica uma ação em cada vértice do grafo
+/// seguindo determinada condição dada por contexto
+/// @param g Ponteiro para o grafo
+/// @param callback Função de callback da ação
+/// @param context Contexto necessário para saber se deve ou não realizar a ação
+void graph_foreach_vertex(graph_t *g, void (*callback)(const char *id, void *vertex_data, lista_t *adjacent, void *context), void *context);
+
+/// @param v Ponteiro para o vértice
+/// @return Dado interno do vértice
+void *vertex_get_data(vertex_t *v);
+
+/// @param e Ponteiro para a aresta
+/// @return Retorna o ID do vértice de destino
+const char *edge_get_target_id(edge_t *e);
+
+/// @param e Ponteiro para a aresta
+/// @return Retorna o dado interno da aresta
+void *edge_get_data(edge_t *e);
+
 
 #endif //PROJETO_02_EDII_GRAFO_H

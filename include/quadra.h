@@ -1,6 +1,10 @@
 #ifndef PROJETO_01_EDII_QUADRA_H
 #define PROJETO_01_EDII_QUADRA_H
 /*
+ * @file quadra.h
+ * @brief Tipo Abstrato de Dados quadra
+ *
+ * @details
  * A estrutura quadra_t encapsula os dados espaciais fundamentais da cidade,
  * incluindo seu identificador único (CEP), suas coordenadas de ancoragem (x, y),
  * suas dimensões (largura e altura) e suas propriedades visuais para
@@ -15,6 +19,7 @@
  * - Atualização em lote: suporte nativo para o comando 'cq', permitindo
  * alterar múltiplas propriedades visuais (cores e espessura) com uma única chamada.
  */
+
 
 typedef struct stQuadra quadra_t;
 

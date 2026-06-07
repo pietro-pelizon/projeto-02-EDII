@@ -4,7 +4,12 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-/* Módulo de Hash Extensível (Extendible Hashing) em memória RAM.
+/*
+ * @file exhash.h
+ * @brief Tipo Abstrato de Dados exhash
+ *
+ * @details
+ * Módulo de Hash Extensível (Extendible Hashing) em memória RAM.
  * Estrutura de dados genérica focada em inserção, busca e remoção ultrarrápidas (O(1) médio).
  * O diretório de baldes (buckets) cresce dinamicamente na memória conforme a necessidade.
  */

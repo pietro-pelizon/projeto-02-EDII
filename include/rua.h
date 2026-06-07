@@ -1,6 +1,24 @@
 #ifndef PROJETO_02_EDII_RUA_H
 #define PROJETO_02_EDII_RUA_H
 
+
+/*
+ * @file rua.h
+ * @brief Entidade de Negócio: Rua (Aresta do Grafo).
+ *
+ * @details
+ * A estrutura "rua_t" encapsula as propriedades físicas e lógicas das vias da cidade,
+ * como comprimento, velocidade média, nome e identificadores de cruzamentos.
+ * Ela atua como o payload (dado real) armazenado dentro das arestas opacas do Grafo.
+ *
+ * Funcionalidades principais:
+ * - Criação segura na Heap via construtores específicos.
+ * - Encapsulamento de cálculo: métodos dedicados para alterar velocidades
+ * (para suporte ao comando "exp") com proteção das propriedades constantes.
+ * - Interface limpa via Getters estritos.
+ */
+
+
 /// @brief Tipo opaco que representa uma rua (aresta) no sistema viário
 typedef struct stRua rua_t;
 

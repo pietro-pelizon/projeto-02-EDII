@@ -1,6 +1,14 @@
 #ifndef PROJETO_02_EDII_PONTO_H
 #define PROJETO_02_EDII_PONTO_H
 
+/* @file ponto.h
+ * @brief Representação geométrica de coordenadas 2D.
+ *
+ * @details
+ * Encapsula coordenadas (x, y) no plano bidimensional, fornecendo getters
+ * e setters para manipulação de posições.
+*/
+
 typedef struct stPonto ponto_t;
 
 /// @brief Inicializa um ponto com coordenadas (x, y)

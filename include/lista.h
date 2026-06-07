@@ -1,8 +1,25 @@
 #ifndef PROJETO_02_EDII_LISTA_H
 #define PROJETO_02_EDII_LISTA_H
 
-#include <stdbool.h>
+/*
+ * @file lista.h
+ * @brief Estrutura de dados Lista Duplamente Encadeada.
+ *
+ * @details
+ * Coleção linear e dinâmica projetada para servir como estrutura base do sistema,
+ * operando como listas de adjacência no Grafo, bem como Pilhas ou Filas convencionais.
+ * Implementada com Ponteiros Opacos e "void *", não possui conhecimento sobre
+ * os dados que transporta, oferecendo máxima reutilização de código.
+ *
+ * Funcionalidades principais:
+ * - Operações de inserção e remoção nas extremidades (Head/Tail) em tempo O(1).
+ * - Iteração bidirecional (next/previous) utilizando nós opacos.
+ * - Gerenciamento automático de alocação de nós na memória Heap.
+ */
 
+
+
+#include <stdbool.h>
 #include "lista.h"
 
 typedef struct stNode nodel_t;
