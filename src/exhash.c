@@ -92,7 +92,7 @@ bool exhash_insert(exhash_t *map, const void *data, const char *key) {
 }
 
 bool exhash_search(const exhash_t *map, const char *key, void *out_data) {
-    assert(map != NULL && key != NULL && out_data != NULL);
+    assert(map != NULL && key != NULL);
 
     uint64_t hashed_key = murmurhash3_64(key, strlen(key), 0);
     uint64_t idx = hashed_key & dir_mask(map);
@@ -104,8 +104,10 @@ bool exhash_search(const exhash_t *map, const char *key, void *out_data) {
         memcpy(&stored_key, b -> data + i * sz, sizeof(uint64_t));
 
         if (stored_key == hashed_key) {
-            memcpy(out_data, b -> data + i * sz + sizeof(uint64_t), map -> record_size);
-            return true;
+            if (out_data != NULL) {
+                memcpy(out_data, b -> data + i * sz + sizeof(uint64_t), map -> record_size);
+            }
+                return true;
         }
     }
 
