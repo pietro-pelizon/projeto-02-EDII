@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "exhash.h"
+#include "../include/exhash.h"
 
 // ============== ESTRUTURAS ==============
 

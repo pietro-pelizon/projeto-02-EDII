@@ -1,21 +1,18 @@
-//
-// Created by pietro on 24/05/2026.
-//
-
 #include "../include/geo_handler.h"
-
-#include <string.h>
-
 #include "../include/exhash.h"
 #include "../include/quadra.h"
-#include "../include/grafo.h"
+
+#include <string.h>
+#include <stdio.h>
+
+
 
 static void comando_cq(const char *linha_lida, char *sw_atual, char *corp_atual, char *corb_atual);
 static void comando_q(const char *linha_lida, char *sw_atual,
     const char *corp_atual, const char *corb_atual, exhash_t *exhash_q);
 
 
-exhash_t *geo_handler(const char *caminho_geo, graph_t *g) {
+exhash_t *geo_handler(const char *caminho_geo) {
     FILE *arquivo_geo = fopen(caminho_geo, "r");
     if (!arquivo_geo) {
         printf("Erro ao abrir %s\n", caminho_geo);
