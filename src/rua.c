@@ -16,8 +16,16 @@ typedef struct stRua {
     double cmp;         // Comprimento da rua (metros)
 } rua_t;
 
-rua_t *rua_init(const char *cep_esquerda, const char *cep_direita, const char *nome, double vm, double cmp) {
-    assert(cep_esquerda != NULL || cep_direita != NULL || nome != NULL);
+rua_t *rua_init(char *cep_esquerda, char *cep_direita, const char *nome, double vm, double cmp) {
+    assert(nome != NULL);
+
+    if (cep_direita == NULL) {
+        cep_direita = "-";
+    }
+
+    if (cep_esquerda == NULL) {
+        cep_esquerda = "-";
+    }
 
     rua_t *r = malloc(sizeof(rua_t));
     assert(r != NULL);
