@@ -17,6 +17,7 @@ saida
 t1
 CMakeLists.txt
 *.txt
+.idea
 
 build
 
