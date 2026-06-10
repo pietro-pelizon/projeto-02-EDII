@@ -98,23 +98,30 @@ bool graph_add_vertex(graph_t *g, void *data, const char *id) {
 
 // Função de comparação do destino da aresta, para checar duplicações
 // ao adicionar novas arestas ao grafo
-static int cmp_target_edge(void *edge, void *target_edge) {
+
+// TODO: commit e explicar fix
+// "cmp_target_edge" tinha parâmetros invertidos em relação a convenção de "search_lista"
+static int cmp_target_edge(void *target_edge, void *edge) {
     edge_t *c = (edge_t*) edge;
     char *wanted_id = (char *)target_edge;
 
-    return strcmp(c -> id, wanted_id);
+    // TODO: Commit e explicar mudança
+    // "cmp_targe_edge" comparava o ID da rua, e não o ID do target
+    return strcmp(c -> target_id, wanted_id);
 }
 
 
 bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *target_id, char *street_name) {
     assert(g != NULL && data != NULL && src_id != NULL && target_id != NULL);
 
-    // Aloca memória e procura o vértice de origem no hashmap do grafo
-    vertex_t *src_v = malloc(sizeof(vertex_t));
+    // TODO: commit e explicar fix
+    // "graph_add_edge" alocava memória para as arestas antes de procurar no hashmap. Causava memory leak pois a memoria já estava alocada, e é copiada dentro de exhash_search caso o dado seja não NULL
+    // Cria um ponteiro NULL para src_v
+    vertex_t *src_v = NULL;
     exhash_search(g -> vertices, src_id, &src_v);
 
-    // Aloca memória e procura o vértice de destino no hashmap do grafo
-    vertex_t *target_v = malloc(sizeof(vertex_t));
+    // Cria um ponteiro NULL para target_v
+    vertex_t *target_v = NULL;
     exhash_search(g -> vertices, target_id, &target_v);
 
 
@@ -147,10 +154,12 @@ bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *targ
 bool is_adjacente(graph_t *g, const char *id_v, const char *id_u) {
     assert(g != NULL && id_v != NULL && id_u != NULL);
 
-    vertex_t *v = malloc (sizeof(vertex_t));
+    // TODO: commitar e explicar fix
+    // Alocava memória desnecessária para os vértices a serem procurados. Causava memory leak
+    vertex_t *v = NULL;
     exhash_search(g -> vertices, id_v, &v);
 
-    vertex_t *u = malloc(sizeof(vertex_t));
+    vertex_t *u = NULL;
     exhash_search(g -> vertices, id_u, &u);
 
     // Caso um dos dois vértices, impossível checar adjacência
@@ -191,13 +200,27 @@ edge_t *graph_get_edge(graph_t *g, const char *src_id, const char *target_id) {
     return search_lista(src_v -> adjacent, (void *)target_id, cmp_target_edge);
 }
 
+
+//TODO: Commitar e explicar mudanças
+// "graph_remove_edge" apaga a aresta, porém, não a removia da lista de adjacência do vértice de origem
 bool graph_remove_edge(graph_t *g, const char *src_id, const char *target_id) {
     assert(g != NULL);
 
-    edge_t *e = graph_get_edge(g, src_id, target_id);
+    vertex_t *src_v = NULL;
+    exhash_search(g -> vertices, src_id, &src_v);
+    if (!src_v) return false;
+
+    edge_t *e = remove_first_data(src_v -> adjacent, (void *)target_id, cmp_target_edge);
     if (!e) return false;
 
-    g -> destructor_edge_data(e);
+    free(e -> target_id);
+    free(e -> id);
+
+
+    if (g -> destructor_edge_data && e -> data) {
+        g -> destructor_edge_data(e -> data);
+        free(e);
+    }
 
     return true;
 }
@@ -219,7 +242,10 @@ bool graph_remove_vertex(graph_t *g, const char *vertex_id) {
     // Remove id e dados
     free(v -> id);
     if (g -> destructor_vertex_data && v -> data) {
-        g -> destructor_vertex_data(v);
+
+        // TODO: commitar e explicar fix
+        // Passava v ao invés de v -> data para a função
+        g -> destructor_vertex_data(v -> data);
     }
 
     // Remove o vértice em si
@@ -276,7 +302,12 @@ typedef struct {
 // Wrapper que será declarado só aqui nesse módulo
 // para encapsular a lógica da função pública
 static void internal_foreach_wrapper(void *record_data, void *context) {
-    vertex_t *v = record_data;
+    // TODO
+    // exhash_foreach entrega record_data apontando para dentro do balde,
+    // onde está armazenado um vertex_t* (ponteiro). Desreferenciar como
+    // vertex_t** é necessário para obter o vertex_t* real, não o endereço
+    // do slot no balde.
+    vertex_t *v = *(vertex_t **)record_data;
     internal_ctx_t *ctx = context;
 
     if (ctx -> user_callback) {
@@ -349,7 +380,7 @@ static void vertex_destroy_internal(void *record_data, void *context) {
 
 // O callback que será chamado para CADA vértice do grafo
 static void remove_neighbors_edges(void *record_data, void *context) {
-    //Como o exhash guarda ponteiros, record_data é um (vertex_t **)
+    // Como o exhash guarda ponteiros, record_data é um (vertex_t **)
     vertex_t *v = *(vertex_t **)record_data;
     ctx_remove_t *ctx = (ctx_remove_t *)context;
 
