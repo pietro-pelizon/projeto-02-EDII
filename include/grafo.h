@@ -101,12 +101,12 @@ void graph_destroy(graph_t *g);
 
 /// @param g Ponteiro para o vértice
 /// @return Retorna a quantidade total de vértices que o grafo irá ter
-int graph_get_nv(graph_t *g);
+int graph_get_total_vertices(graph_t *g);
 
 /// @brief Define a quantidade de vértices que o grafo terá
 /// @param g Ponteiro para o grafo
-/// @param novo_nv Quantidade de vértices
-void graph_set_nv(graph_t *g, int novo_nv);
+/// @param new_total_vertices Quantidade de vértices
+void graph_set_total_vertices(graph_t *g, int new_total_vertices);
 
 /// @param g Ponteiro para a quadra
 /// @return Retorna o exhash de vértices

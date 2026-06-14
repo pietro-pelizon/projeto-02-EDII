@@ -45,7 +45,7 @@ typedef struct stEdge {
 // qualquer tipo dos dados contidos na aresta e vértice
 typedef struct stGraph {
     exhash_t *vertices;
-    int nv; // Número de vértices totais que o grafo ira conter
+    int total_vertices;
     void (*comparator)(void *a, void *b);
     void (*destructor_edge_data)(void *data);
     void (*destructor_vertex_data)(void *data);
@@ -55,18 +55,18 @@ graph_t *graph_init(void (*comparator)(void *a, void *b),
     void (*destructor_edge_data)(void *data),
     void (*destructor_vertex_data)(void *data)) {
 
-    graph_t *graph = malloc(sizeof(graph_t));
-    assert(graph != NULL);
+    graph_t *new_graph = malloc(sizeof(graph_t));
+    assert(new_graph != NULL);
 
-    graph -> vertices = exhash_init(sizeof(vertex_t *), 512);
+    new_graph -> vertices = exhash_init(sizeof(vertex_t *), 512);
 
-    graph -> nv = 0;
+    new_graph -> total_vertices = 0;
 
-    graph -> comparator = comparator;
-    graph -> destructor_edge_data = destructor_edge_data;
-    graph -> destructor_vertex_data = destructor_vertex_data;
+    new_graph -> comparator = comparator;
+    new_graph -> destructor_edge_data = destructor_edge_data;
+    new_graph -> destructor_vertex_data = destructor_vertex_data;
 
-    return graph;
+    return new_graph;
 
 }
 
@@ -99,21 +99,19 @@ bool graph_add_vertex(graph_t *g, void *data, const char *id) {
 // Função de comparação do destino da aresta, para checar duplicações
 // ao adicionar novas arestas ao grafo
 static int cmp_target_edge(void *target_edge, void *edge) {
-    edge_t *c = (edge_t*) edge;
+    edge_t *e = (edge_t*) edge;
     char *wanted_id = (char *)target_edge;
 
-    return strcmp(c -> target_id, wanted_id);
+    return strcmp(e -> target_id, wanted_id);
 }
 
 
 bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *target_id, char *street_name) {
     assert(g != NULL && data != NULL && src_id != NULL && target_id != NULL);
 
-    // Cria um ponteiro NULL para src_v
     vertex_t *src_v = NULL;
     exhash_search(g -> vertices, src_id, &src_v);
 
-    // Cria um ponteiro NULL para target_v
     vertex_t *target_v = NULL;
     exhash_search(g -> vertices, target_id, &target_v);
 
@@ -137,7 +135,6 @@ bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *targ
     new_edge -> id = my_strdup(street_name);
     new_edge -> data = data;
 
-    // Insere a aresta na lista de adjacência do vértice de origem
     // Nova aresta parte de src_v para target_v
     insert_tail(src_v -> adjacent, new_edge);
 
@@ -168,14 +165,14 @@ bool is_adjacente(graph_t *g, const char *id_v, const char *id_u) {
 vertex_t *graph_get_vertex(graph_t *g, const char *vertex_id) {
     assert(g != NULL && vertex_id != NULL);
 
-    vertex_t *v = NULL;
+    vertex_t *wanted_vertex = NULL;
 
-    if (!exhash_search(g -> vertices, vertex_id, &v)) {
+    if (!exhash_search(g -> vertices, vertex_id, &wanted_vertex)) {
         fprintf(stderr, "Vértice de ID %s não encontrado.\n", vertex_id);
         return NULL;
     }
 
-    return v;
+    return wanted_vertex;
 }
 
 edge_t *graph_get_edge(graph_t *g, const char *src_id, const char *target_id) {
@@ -183,7 +180,6 @@ edge_t *graph_get_edge(graph_t *g, const char *src_id, const char *target_id) {
 
     vertex_t *src_v = NULL;
 
-    // Acha o vértice de origem em O(1)
     exhash_search(g -> vertices, src_id, &src_v);
     if (!src_v) return NULL;
 
@@ -268,12 +264,12 @@ void graph_destroy(graph_t *g) {
 
 }
 
-int graph_get_nv(graph_t *g) {
-    return g -> nv;
+int graph_get_total_vertices(graph_t *g) {
+    return g -> total_vertices;
 }
 
-void graph_set_nv(graph_t *g, int novo_nv) {
-    g -> nv = novo_nv;
+void graph_set_total_vertices(graph_t *g, int new_total_vertices) {
+    g -> total_vertices = new_total_vertices;
 }
 
 exhash_t *graph_get_exhash(graph_t *g) {

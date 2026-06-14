@@ -9,11 +9,11 @@
 
 
 typedef struct stRua {
-    char *cep_esquerda; // CEP quadra a esquerda
-    char *cep_direita;  // CEP quadra a direita
+    char *cep_esquerda;
+    char *cep_direita;
     char *nome;
-    double vm;          // Velocidade média (m/s)
-    double cmp;         // Comprimento da rua (metros)
+    double velocidade_media;
+    double comprimento;
 } rua_t;
 
 rua_t *rua_init(char *cep_esquerda, char *cep_direita, const char *nome, double vm, double cmp) {
@@ -34,31 +34,31 @@ rua_t *rua_init(char *cep_esquerda, char *cep_direita, const char *nome, double 
     r -> cep_direita = my_strdup(cep_direita);
     r -> nome = my_strdup(nome);
 
-    r -> vm = vm;
-    r -> cmp = cmp;
+    r -> velocidade_media = vm;
+    r -> comprimento = cmp;
 
     return r;
 }
 
-char *get_cep_esquerda(rua_t *r) {
+char *rua_get_cep_esquerda(rua_t *r) {
     return r -> cep_esquerda;
 }
 
-void set_cep_esquerda(rua_t *r, char *novo_cep_esquerda) {
-    assert(novo_cep_esquerda != NULL);
+void rua_set_cep_esquerda(rua_t *r, char *cep_esquerda) {
+    assert(cep_esquerda != NULL);
 
     if (r -> cep_esquerda != NULL) {
         free(r -> cep_esquerda);
     }
 
-    r -> cep_esquerda = my_strdup(novo_cep_esquerda);
+    r -> cep_esquerda = my_strdup(cep_esquerda);
 }
 
-char *get_cep_direita(rua_t *r) {
+char *rua_get_cep_direita(rua_t *r) {
     return r -> cep_direita;
 }
 
-void set_cep_direita(rua_t *r, char *novo_cep_direita) {
+void rua_set_cep_direita(rua_t *r, char *novo_cep_direita) {
     assert(novo_cep_direita != NULL);
 
     if (r -> cep_direita != NULL) {
@@ -68,11 +68,11 @@ void set_cep_direita(rua_t *r, char *novo_cep_direita) {
     r -> cep_direita = my_strdup(novo_cep_direita);
 }
 
-char *get_nome(rua_t *r) {
+char *rua_get_nome(rua_t *r) {
     return r -> nome;
 }
 
-void set_nome(rua_t *r, char *novo_nome) {
+void rua_set_nome(rua_t *r, char *novo_nome) {
     assert(novo_nome != NULL);
 
     if (r -> nome != NULL) {
@@ -82,20 +82,20 @@ void set_nome(rua_t *r, char *novo_nome) {
     r -> nome = my_strdup(novo_nome);
 }
 
-double get_vm(rua_t *r) {
-    return r -> vm;
+double rua_get_velocidade_media(rua_t *r) {
+    return r -> velocidade_media;
 }
 
-void set_vm(rua_t *r, double nova_vm) {
-    r -> vm = nova_vm;
+void rua_set_velocidade_media(rua_t *r, double velocidade_media) {
+    r -> velocidade_media = velocidade_media;
 }
 
-double get_cmp(rua_t *r) {
-    return r -> cmp;
+double rua_get_comprimento(rua_t *r) {
+    return r -> comprimento;
 }
 
-void set_cmp(rua_t *r, double novo_cmp) {
-    r -> cmp = novo_cmp;
+void rua_set_comprimento(rua_t *r, double comprimento) {
+    r -> comprimento = comprimento;
 }
 
 void rua_destroy(rua_t *r) {

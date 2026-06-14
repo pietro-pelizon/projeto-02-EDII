@@ -19,7 +19,7 @@ exhash_t *geo_handler(const char *caminho_geo) {
         return NULL;
     }
 
-    exhash_t *exhash_q = exhash_init(sizeof(quadra_t *), 4096);
+    exhash_t *exhash_quadras = exhash_init(sizeof(quadra_t *), 4096);
 
     char cor_preenchimento[20] = "white";
     char cor_borda[20] = "black";
@@ -36,13 +36,13 @@ exhash_t *geo_handler(const char *caminho_geo) {
             comando_cq(linha_leitura, espessura_borda, cor_preenchimento, cor_borda);
         }
         else if (strcmp(comando, "q") == 0) {
-            comando_q(linha_leitura, espessura_borda, cor_preenchimento, cor_borda, exhash_q);
+            comando_q(linha_leitura, espessura_borda, cor_preenchimento, cor_borda, exhash_quadras);
         }
     }
 
     fclose(arquivo_geo);
 
-    return exhash_q;
+    return exhash_quadras;
 }
 
 
@@ -54,15 +54,15 @@ static void comando_cq(const char *linha_lida, char *sw_atual, char *corp_atual,
 static void comando_q(const char *linha_lida,  char *sw_atual,
     const char *corp_atual, const char *corb_atual,  exhash_t *exhash_q) {
 
-    char cep[16];
-    double x, y, w, h;
+    char cep_quadra[16];
+    double x_quadra, y_quadra, width_quadra, height_quadra;
 
-    sscanf(linha_lida, "%*s %15s %lf %lf %lf %lf", cep, &x, &y, &w, &h);
+    sscanf(linha_lida, "%*s %15s %lf %lf %lf %lf", cep_quadra, &x_quadra, &y_quadra, &width_quadra, &height_quadra);
 
-    quadra_t *nova_quadra = quadra_init(cep, x, y, w, h);
+    quadra_t *nova_quadra = quadra_init(cep_quadra, x_quadra, y_quadra, width_quadra, height_quadra);
     if (nova_quadra == NULL) return;
 
     quadra_set_cq(nova_quadra, sw_atual, corp_atual, corb_atual);
 
-    exhash_insert(exhash_q, &nova_quadra, cep);
+    exhash_insert(exhash_q, &nova_quadra, cep_quadra);
 }

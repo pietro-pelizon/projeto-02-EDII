@@ -6,10 +6,10 @@
 
 
 char *my_strdup(const char *src) {
-    char *dst = malloc(strlen (src) + 1);  // Space for length plus nul
-    if (dst == NULL) return NULL;              // No memory
-    strcpy(dst, src);                          // Copy the characters
-    return dst;                                // Return the new string
+    char *dst = malloc(strlen (src) + 1);
+    if (dst == NULL) return NULL;
+    strcpy(dst, src);
+    return dst;
 }
 
 void cor_aleatoria(char *buffer) {

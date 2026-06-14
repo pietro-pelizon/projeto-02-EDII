@@ -8,16 +8,14 @@
 
 typedef struct stQuadra {
     char *cep;
-    char *corb;
-    char *corp;
-    char *sw;
+    char *cor_borda;
+    char *cor_preenchimento;
+    char *stroke_width;
     ponto_t *p;
-    double w, h;
+    double width, height;
 
 } quadra_t;
 
-// Vou deixar o construtor dessa forma por enquanto, já que não sei quais parâmetros
-// irão ser utilizados para criar a quadra no trabalho atual
 quadra_t *quadra_init(const char *cep, double x, double y, double w, double h) {
     assert(cep != NULL);
 
@@ -26,8 +24,8 @@ quadra_t *quadra_init(const char *cep, double x, double y, double w, double h) {
 
     nova_quadra -> cep = my_strdup(cep);
     nova_quadra -> p = ponto_init(x, y);
-    nova_quadra -> w = w;
-    nova_quadra -> h = h;
+    nova_quadra -> width = w;
+    nova_quadra -> height = h;
 
     return nova_quadra;
 }
@@ -36,9 +34,9 @@ void quadra_destroy(quadra_t *q) {
     if (q == NULL) return;
 
     free(q -> cep);
-    free(q -> corb);
-    free(q -> corp);
-    free(q -> sw);
+    free(q -> cor_borda);
+    free(q -> cor_preenchimento);
+    free(q -> stroke_width);
     free(q -> p);
 
     free(q);
@@ -60,43 +58,43 @@ void quadra_set_y(quadra_t *q, double novo_y) {
     ponto_set_y(q -> p, novo_y);
 }
 
-void quadra_set_w(quadra_t *q, double novo_w) {
-    q -> w = novo_w;
+void quadra_set_width(quadra_t *q, double width) {
+    q -> width = width;
 }
 
-void quadra_set_h(quadra_t *q, double novo_h) {
-    q -> h = novo_h;
+void quadra_set_height(quadra_t *q, double nova_height) {
+    q -> height = nova_height;
 }
 
-void quadra_set_corp(quadra_t *q, const char *nova_corp) {
-    assert(q != NULL && nova_corp != NULL);
+void quadra_set_cor_preenchimento(quadra_t *q, const char *cor_preenchimento) {
+    assert(q != NULL && cor_preenchimento != NULL);
 
-    if (q -> corp != NULL) {
-        free(q -> corp);
+    if (q -> cor_preenchimento != NULL) {
+        free(q -> cor_preenchimento);
     }
 
-    q -> corp = my_strdup(nova_corp);
+    q -> cor_preenchimento = my_strdup(cor_preenchimento);
 }
 
-void quadra_set_corb(quadra_t *q, const char *nova_corb) {
-    assert(q != NULL && nova_corb != NULL);
+void quadra_set_cor_borda(quadra_t *q, const char *cor_borda) {
+    assert(q != NULL && cor_borda != NULL);
 
-    if (q -> corb != NULL) {
-        free(q -> corb);
+    if (q -> cor_borda != NULL) {
+        free(q -> cor_borda);
     }
 
-    q -> corb = my_strdup(nova_corb);
+    q -> cor_borda = my_strdup(cor_borda);
 
 }
 
-void quadra_set_sw(quadra_t *q, const char *novo_sw) {
-    assert(q != NULL && novo_sw != NULL);
+void quadra_set_stroke_width(quadra_t *q, const char *stroke_width) {
+    assert(q != NULL && stroke_width != NULL);
 
-    if (q -> sw != NULL) {
-        free(q -> sw);
+    if (q -> stroke_width != NULL) {
+        free(q -> stroke_width);
     }
 
-    q -> sw = my_strdup(novo_sw);
+    q -> stroke_width = my_strdup(stroke_width);
 }
 
 double quadra_get_x(const quadra_t *q) {
@@ -112,34 +110,34 @@ double quadra_get_y(const quadra_t *q) {
 
 }
 
-double quadra_get_w(const quadra_t *q) {
+double quadra_get_width(const quadra_t *q) {
     assert(q != NULL);
 
-    return q -> w;
+    return q -> width;
 }
 
-double quadra_get_h(const quadra_t *q) {
+double quadra_get_height(const quadra_t *q) {
     assert(q != NULL);
 
-    return q -> h;
+    return q -> height;
 }
 
-const char *quadra_get_corp(const quadra_t *q) {
+const char *quadra_get_cor_preenchimento(const quadra_t *q) {
     assert(q != NULL);
 
-    return q -> corp;
+    return q -> cor_preenchimento;
 }
 
-const char *quadra_get_corb(const quadra_t *q) {
+const char *quadra_get_cor_borda(const quadra_t *q) {
     assert(q != NULL);
 
-    return q -> corb;
+    return q -> cor_borda;
 }
 
-const char *quadra_get_sw(const quadra_t *q) {
+const char *quadra_get_stroke_width(const quadra_t *q) {
     assert(q != NULL);
 
-    return q -> sw;
+    return q -> stroke_width;
 }
 
 const char *quadra_get_cep(const quadra_t *q) {
@@ -148,39 +146,39 @@ const char *quadra_get_cep(const quadra_t *q) {
     return q -> cep;
 }
 
-void quadra_set_cq(quadra_t *q, const char *sw, const char *corp, const char *corb) {
+void quadra_set_cq(quadra_t *q, const char *stroke_width, const char *cor_preenchimento, const char *cor_borda) {
     assert(q != NULL);
 
-    quadra_set_sw(q, sw);
-    quadra_set_corb(q, corb);
-    quadra_set_corp(q, corp);
+    quadra_set_stroke_width(q, stroke_width);
+    quadra_set_cor_borda(q, cor_borda);
+    quadra_set_cor_preenchimento(q, cor_preenchimento);
 }
 
-void quadra_get_coord(char face, double *x, double *y, quadra_t *quadra, double numero) {
-    double qx = quadra_get_x(quadra);
-    double qy = quadra_get_y(quadra);
-    double qw = quadra_get_w(quadra);
-    double qh = quadra_get_h(quadra);
+void quadra_get_coord(char face, double *x, double *y, quadra_t *q, double numero) {
+    double x_quadra = quadra_get_x(q);
+    double y_quadra = quadra_get_y(q);
+    double width_quadra = quadra_get_width(q);
+    double height_quadra = quadra_get_height(q);
 
     switch (face) {
         case 'S': {
-            *x = qx + numero;
-            *y = qy;
+            *x = x_quadra + numero;
+            *y = y_quadra;
             break;
         }
         case 'N': {
-            *x = qx + numero;
-            *y = qy + qh;
+            *x = x_quadra + numero;
+            *y = y_quadra + height_quadra;
             break;
         }
         case 'L': {
-            *x = qx;
-            *y = qy + numero;
+            *x = x_quadra;
+            *y = y_quadra + numero;
             break;
         }
         case 'O': {
-            *x = qx + qw;
-            *y = qy + numero;
+            *x = x_quadra + width_quadra;
+            *y = y_quadra + numero;
             break;
         }
         default: printf("Face %c inválida!\n", face);

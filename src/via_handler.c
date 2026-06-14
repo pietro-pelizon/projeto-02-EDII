@@ -25,7 +25,7 @@ void via_handler(char *path_via, graph_t *g) {
     int nv = 0;
 
     fscanf(arquivo_via, "%d\n", &nv);
-    graph_set_nv(g, nv);
+    graph_set_total_vertices(g, nv);
 
     while (fgets(linha_leitura, sizeof(linha_leitura), arquivo_via)) {
 

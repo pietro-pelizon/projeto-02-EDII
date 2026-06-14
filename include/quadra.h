@@ -53,43 +53,43 @@ void quadra_set_y(quadra_t *q, double novo_y);
 
 /// @brief Define a largura (width) do retângulo da quadra.
 /// @param q Ponteiro para a quadra que será alterada.
-/// @param novo_w Novo valor numérico da largura.
-void quadra_set_w(quadra_t *q, double novo_w);
+/// @param width Novo valor numérico da largura.
+void quadra_set_width(quadra_t *q, double width);
 
 /// @brief Define a altura (height) do retângulo da quadra.
 /// @param q Ponteiro para a quadra que será alterada.
-/// @param novo_h Novo valor numérico da altura.
-void quadra_set_h(quadra_t *q, double novo_h);
+/// @param height Novo valor numérico da altura.
+void quadra_set_height(quadra_t *q, double height);
 
 /// @brief Define a cor de preenchimento (cfill) do retângulo da quadra.
 /// @param q Ponteiro para a quadra que será alterada.
-/// @param nova_corp String contendo a cor (ex: "red", "#FF0000").
-void quadra_set_corp(quadra_t *q, const char *nova_corp);
+/// @param cor_preenchimento String contendo a cor (ex: "red", "#FF0000").
+void quadra_set_cor_preenchimento(quadra_t *q, const char *cor_preenchimento);
 
 /// @brief Define a cor da borda (cstrk) do retângulo da quadra.
 /// @param q Ponteiro para a quadra que será alterada.
-/// @param nova_corb String contendo a cor da borda.
-void quadra_set_corb(quadra_t *q, const char *nova_corb);
+/// @param cor_borda String contendo a cor da borda.
+void quadra_set_cor_borda(quadra_t *q, const char *cor_borda);
 
 /// @brief Define a espessura da borda (stroke width) do retângulo da quadra.
 /// @param q Ponteiro para a quadra que será alterada.
-/// @param novo_sw Novo valor numérico da espessura.
-void quadra_set_sw(quadra_t *q, const char *novo_sw);
+/// @param stroke_width Novo valor numérico da espessura.
+void quadra_set_stroke_width(quadra_t *q, const char *stroke_width);
 
 /// @brief Obtém a cor de preenchimento atual da quadra.
 /// @param q Ponteiro para a quadra.
 /// @return Retorna a string inalterável contendo a cor de preenchimento.
-const char *quadra_get_corp(const quadra_t *q);
+const char *quadra_get_cor_preenchimento(const quadra_t *q);
 
 /// @brief Obtém a cor da borda atual da quadra.
 /// @param q Ponteiro para a quadra.
 /// @return Retorna a string inalterável contendo a cor da borda.
-const char *quadra_get_corb(const quadra_t *q);
+const char *quadra_get_cor_borda(const quadra_t *q);
 
 /// @brief Obtém a espessura da borda (stroke width) atual da quadra.
 /// @param q Ponteiro para a quadra.
 /// @return Retorna o valor numérico da espessura.
-const char *quadra_get_sw(const quadra_t *q);
+const char *quadra_get_stroke_width(const quadra_t *q);
 
 /// @brief Obtém o CEP (identificador único) da quadra.
 /// @param q Ponteiro para a quadra.
@@ -109,12 +109,12 @@ double quadra_get_y(const quadra_t *q);
 /// @brief Obtém a largura atual (width) da quadra.
 /// @param q Ponteiro para a quadra.
 /// @return Valor da largura.
-double quadra_get_w(const quadra_t *q);
+double quadra_get_width(const quadra_t *q);
 
 /// @brief Obtém a altura atual (height) da quadra.
 /// @param q Ponteiro para a quadra.
 /// @return Valor da altura.
-double quadra_get_h(const quadra_t *q);
+double quadra_get_height(const quadra_t *q);
 
 /// @brief Aplica em lote as propriedades visuais da quadra (Equivalente ao comando 'cq').
 /// @param q Ponteiro para a quadra que será alterada.
@@ -127,8 +127,8 @@ void quadra_set_cq(quadra_t *q, char *sw, const char *corp,  const char *corb);
 /// @param face Face desejada
 /// @param x Coordenada x que será "retornada"
 /// @param y Coordenada y que será "retornada"
-/// @param quadra Ponteiro para a quadra
+/// @param q Ponteiro para a quadra
 /// @param numero Número da "casa"
-void quadra_get_coord(char face, double *x, double *y, quadra_t *quadra, double numero);
+void quadra_get_coord(char face, double *x, double *y, quadra_t *q, double numero);
 
 #endif //PROJETO_01_EDII_QUADRA_H
