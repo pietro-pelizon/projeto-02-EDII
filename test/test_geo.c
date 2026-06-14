@@ -52,8 +52,8 @@ void comando_q_preserva_dados_espaciais(void) {
     TEST_ASSERT_EQUAL_STRING("cep01", quadra_get_cep(q));
     TEST_ASSERT_DOUBLE_WITHIN(1e-6, 10.0,  quadra_get_x(q));
     TEST_ASSERT_DOUBLE_WITHIN(1e-6, 20.0,  quadra_get_y(q));
-    TEST_ASSERT_DOUBLE_WITHIN(1e-6, 100.0, quadra_get_w(q));
-    TEST_ASSERT_DOUBLE_WITHIN(1e-6, 50.0,  quadra_get_h(q));
+    TEST_ASSERT_DOUBLE_WITHIN(1e-6, 100.0, quadra_get_width(q));
+    TEST_ASSERT_DOUBLE_WITHIN(1e-6, 50.0,  quadra_get_height(q));
 
     exhash_destroy(h);
 }
@@ -65,9 +65,9 @@ void cores_padrao_aplicadas_sem_cq(void) {
     quadra_t *q = NULL;
     exhash_search(h, "cep01", &q);
 
-    TEST_ASSERT_EQUAL_STRING("white", quadra_get_corp(q));
-    TEST_ASSERT_EQUAL_STRING("black", quadra_get_corb(q));
-    TEST_ASSERT_EQUAL_STRING("1.0px", quadra_get_sw(q));
+    TEST_ASSERT_EQUAL_STRING("white", quadra_get_cor_preenchimento(q));
+    TEST_ASSERT_EQUAL_STRING("black", quadra_get_cor_borda(q));
+    TEST_ASSERT_EQUAL_STRING("1.0px", quadra_get_stroke_width(q));
 
     exhash_destroy(h);
 }
@@ -85,12 +85,12 @@ void comando_cq_altera_cores_das_quadras_seguintes(void) {
     exhash_search(h, "antes",  &antes);
     exhash_search(h, "depois", &depois);
 
-    TEST_ASSERT_EQUAL_STRING("white", quadra_get_corp(antes));
-    TEST_ASSERT_EQUAL_STRING("black", quadra_get_corb(antes));
+    TEST_ASSERT_EQUAL_STRING("white", quadra_get_cor_preenchimento(antes));
+    TEST_ASSERT_EQUAL_STRING("black", quadra_get_cor_borda(antes));
 
-    TEST_ASSERT_EQUAL_STRING("red",  quadra_get_corp(depois));
-    TEST_ASSERT_EQUAL_STRING("blue", quadra_get_corb(depois));
-    TEST_ASSERT_EQUAL_STRING("2px",  quadra_get_sw(depois));
+    TEST_ASSERT_EQUAL_STRING("red",  quadra_get_cor_preenchimento(depois));
+    TEST_ASSERT_EQUAL_STRING("blue", quadra_get_cor_borda(depois));
+    TEST_ASSERT_EQUAL_STRING("2px",  quadra_get_stroke_width(depois));
 
     exhash_destroy(h);
 }
@@ -107,9 +107,9 @@ void comando_cq_nao_afeta_quadras_anteriores(void) {
     quadra_t *q1 = NULL;
     exhash_search(h, "cep01", &q1);
 
-    TEST_ASSERT_EQUAL_STRING("white", quadra_get_corp(q1));
-    TEST_ASSERT_EQUAL_STRING("black", quadra_get_corb(q1));
-    TEST_ASSERT_EQUAL_STRING("1.0px", quadra_get_sw(q1));
+    TEST_ASSERT_EQUAL_STRING("white", quadra_get_cor_preenchimento(q1));
+    TEST_ASSERT_EQUAL_STRING("black", quadra_get_cor_borda(q1));
+    TEST_ASSERT_EQUAL_STRING("1.0px", quadra_get_stroke_width(q1));
 
     exhash_destroy(h);
 }
@@ -126,9 +126,9 @@ void multiplos_cq_usa_o_mais_recente(void) {
     quadra_t *q = NULL;
     exhash_search(h, "cep01", &q);
 
-    TEST_ASSERT_EQUAL_STRING("lime", quadra_get_corp(q));
-    TEST_ASSERT_EQUAL_STRING("pink", quadra_get_corb(q));
-    TEST_ASSERT_EQUAL_STRING("3px",  quadra_get_sw(q));
+    TEST_ASSERT_EQUAL_STRING("lime", quadra_get_cor_preenchimento(q));
+    TEST_ASSERT_EQUAL_STRING("pink", quadra_get_cor_borda(q));
+    TEST_ASSERT_EQUAL_STRING("3px",  quadra_get_stroke_width(q));
 
     exhash_destroy(h);
 }

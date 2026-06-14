@@ -322,8 +322,8 @@ void remove_vertex_nao_corrompe_outros_vertices(void) {
 void set_get_nv(void) {
     graph_t *g = novo_grafo();
 
-    graph_set_nv(g, 10);
-    TEST_ASSERT_EQUAL_INT(10, graph_get_nv(g));
+    graph_set_total_vertices(g, 10);
+    TEST_ASSERT_EQUAL_INT(10, graph_get_total_vertices(g));
 
     graph_destroy(g);
 }

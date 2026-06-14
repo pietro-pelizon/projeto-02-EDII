@@ -134,9 +134,9 @@ void payload_da_aresta_contem_dados_corretos(void) {
     TEST_ASSERT_NOT_NULL(e);
 
     rua_t *r = (rua_t *)edge_get_data(e);
-    TEST_ASSERT_EQUAL_STRING("Av_Brasil", get_nome(r));
-    TEST_ASSERT_EQUAL_DOUBLE(200.0, get_cmp(r));
-    TEST_ASSERT_EQUAL_DOUBLE(16.7,  get_vm(r));
+    TEST_ASSERT_EQUAL_STRING("Av_Brasil", rua_get_nome(r));
+    TEST_ASSERT_EQUAL_DOUBLE(200.0, rua_get_comprimento(r));
+    TEST_ASSERT_EQUAL_DOUBLE(16.7,  rua_get_velocidade_media(r));
 
     graph_destroy(g);
     remove(path);
@@ -198,14 +198,14 @@ void nv_do_grafo_e_setado_corretamente(void) {
 
     via_handler(path, g);
 
-    TEST_ASSERT_EQUAL_INT(4, graph_get_nv(g));
+    TEST_ASSERT_EQUAL_INT(4, graph_get_total_vertices(g));
 
     graph_destroy(g);
     remove(path);
     free(path);
 }
 
-// Arquivo sem nenhuma linha v ou e: grafo deve ficar vazio mas nv setado
+// Arquivo sem nenhuma linha v ou e: grafo deve ficar vazio, mas total_vertices setado
 void arquivo_so_com_nv(void) {
     const char *conteudo = "0\n";
 
@@ -214,7 +214,7 @@ void arquivo_so_com_nv(void) {
 
     via_handler(path, g);
 
-    TEST_ASSERT_EQUAL_INT(0, graph_get_nv(g));
+    TEST_ASSERT_EQUAL_INT(0, graph_get_total_vertices(g));
     TEST_ASSERT_NULL(graph_get_vertex(g, "qualquer"));
 
     graph_destroy(g);
@@ -239,7 +239,7 @@ void nome_de_rua_com_espacos(void) {
     TEST_ASSERT_NOT_NULL(e);
 
     rua_t *r = (rua_t *)edge_get_data(e);
-    TEST_ASSERT_EQUAL_STRING("Avenida Sete de Setembro", get_nome(r));
+    TEST_ASSERT_EQUAL_STRING("Avenida Sete de Setembro", rua_get_nome(r));
 
     graph_destroy(g);
     remove(path);

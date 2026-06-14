@@ -22,41 +22,41 @@ void init_retorna_nao_nulo(void) {
 
 // Verifica se os getters retornam os valores passados no construtor
 void getters_retornam_valores_iniciais(void) {
-    TEST_ASSERT_EQUAL_STRING("cep01",         get_cep_esquerda(rua));
-    TEST_ASSERT_EQUAL_STRING("cep02",         get_cep_direita(rua));
-    TEST_ASSERT_EQUAL_STRING("Rua_das_Flores", get_nome(rua));
-    TEST_ASSERT_EQUAL_DOUBLE(13.9,  get_vm(rua));
-    TEST_ASSERT_EQUAL_DOUBLE(150.0, get_cmp(rua));
+    TEST_ASSERT_EQUAL_STRING("cep01",         rua_get_cep_esquerda(rua));
+    TEST_ASSERT_EQUAL_STRING("cep02",         rua_get_cep_direita(rua));
+    TEST_ASSERT_EQUAL_STRING("Rua_das_Flores", rua_get_nome(rua));
+    TEST_ASSERT_EQUAL_DOUBLE(13.9,  rua_get_velocidade_media(rua));
+    TEST_ASSERT_EQUAL_DOUBLE(150.0, rua_get_comprimento(rua));
 }
 
 // set_vm deve alterar o valor retornado por get_vm
 void set_vm_altera_velocidade(void) {
-    set_vm(rua, 25.0);
-    TEST_ASSERT_EQUAL_DOUBLE(25.0, get_vm(rua));
+    rua_set_velocidade_media(rua, 25.0);
+    TEST_ASSERT_EQUAL_DOUBLE(25.0, rua_get_velocidade_media(rua));
 }
 
 // set_cmp deve alterar o valor retornado por get_cmp
 void set_cmp_altera_comprimento(void) {
-    set_cmp(rua, 300.0);
-    TEST_ASSERT_EQUAL_DOUBLE(300.0, get_cmp(rua));
+    rua_set_comprimento(rua, 300.0);
+    TEST_ASSERT_EQUAL_DOUBLE(300.0, rua_get_comprimento(rua));
 }
 
 // set_nome deve alterar o valor retornado por get_nome
 void set_nome_altera_nome(void) {
-    set_nome(rua, "Av_Paulista");
-    TEST_ASSERT_EQUAL_STRING("Av_Paulista", get_nome(rua));
+    rua_set_nome(rua, "Av_Paulista");
+    TEST_ASSERT_EQUAL_STRING("Av_Paulista", rua_get_nome(rua));
 }
 
 // set_cep_esquerda deve alterar o valor retornado por get_cep_esquerda
 void set_cep_esquerda_altera_cep(void) {
-    set_cep_esquerda(rua, "cep99");
-    TEST_ASSERT_EQUAL_STRING("cep99", get_cep_esquerda(rua));
+    rua_set_cep_esquerda(rua, "cep99");
+    TEST_ASSERT_EQUAL_STRING("cep99", rua_get_cep_esquerda(rua));
 }
 
 // set_cep_direita deve alterar o valor retornado por get_cep_direita
 void set_cep_direita_altera_cep(void) {
-    set_cep_direita(rua, "cep88");
-    TEST_ASSERT_EQUAL_STRING("cep88", get_cep_direita(rua));
+    rua_set_cep_direita(rua, "cep88");
+    TEST_ASSERT_EQUAL_STRING("cep88", rua_get_cep_direita(rua));
 }
 
 // Rua criada com CEPs nulos (lado sem quadra, indicado por "-" no (.via))
@@ -72,13 +72,13 @@ void init_com_cep_nulo(void) {
 // (a função deve copiar a string, não apenas guardar o ponteiro)
 void set_nome_copia_string(void) {
     char nome_temporario[] = "Rua_Temporaria";
-    set_nome(rua, nome_temporario);
+    rua_set_nome(rua, nome_temporario);
 
     // Modifica o buffer original
     nome_temporario[0] = 'X';
 
     // O nome interno da rua não deve ter mudado
-    TEST_ASSERT_EQUAL_STRING("Rua_Temporaria", get_nome(rua));
+    TEST_ASSERT_EQUAL_STRING("Rua_Temporaria", rua_get_nome(rua));
 }
 
 int main(void) {

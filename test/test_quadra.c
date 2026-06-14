@@ -20,8 +20,8 @@ void init_preserva_dados(void) {
     TEST_ASSERT_EQUAL_STRING("12345-678", quadra_get_cep(q));
     TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 10.0,  quadra_get_x(q));
     TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 20.0,  quadra_get_y(q));
-    TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 100.0, quadra_get_w(q));
-    TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 50.0,  quadra_get_h(q));
+    TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 100.0, quadra_get_width(q));
+    TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 50.0,  quadra_get_height(q));
 
     quadra_destroy(q);
 }
@@ -56,8 +56,8 @@ void set_y_altera_valor(void) {
 void set_w_altera_valor(void) {
     quadra_t *q = quadra_init("00000-000", 0.0, 0.0, 10.0, 10.0);
 
-    quadra_set_w(q, 200.0);
-    TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 200.0, quadra_get_w(q));
+    quadra_set_width(q, 200.0);
+    TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 200.0, quadra_get_width(q));
 
     quadra_destroy(q);
 }
@@ -65,8 +65,8 @@ void set_w_altera_valor(void) {
 void set_h_altera_valor(void) {
     quadra_t *q = quadra_init("00000-000", 0.0, 0.0, 10.0, 10.0);
 
-    quadra_set_h(q, 300.0);
-    TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 300.0, quadra_get_h(q));
+    quadra_set_height(q, 300.0);
+    TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 300.0, quadra_get_height(q));
 
     quadra_destroy(q);
 }
@@ -74,8 +74,8 @@ void set_h_altera_valor(void) {
 void set_corp_altera_valor(void) {
     quadra_t *q = quadra_init("00000-000", 0.0, 0.0, 10.0, 10.0);
 
-    quadra_set_corp(q, "blue");
-    TEST_ASSERT_EQUAL_STRING("blue", quadra_get_corp(q));
+    quadra_set_cor_preenchimento(q, "blue");
+    TEST_ASSERT_EQUAL_STRING("blue", quadra_get_cor_preenchimento(q));
 
     quadra_destroy(q);
 }
@@ -83,8 +83,8 @@ void set_corp_altera_valor(void) {
 void set_corb_altera_valor(void) {
     quadra_t *q = quadra_init("00000-000", 0.0, 0.0, 10.0, 10.0);
 
-    quadra_set_corb(q, "red");
-    TEST_ASSERT_EQUAL_STRING("red", quadra_get_corb(q));
+    quadra_set_cor_borda(q, "red");
+    TEST_ASSERT_EQUAL_STRING("red", quadra_get_cor_borda(q));
 
     quadra_destroy(q);
 }
@@ -92,8 +92,8 @@ void set_corb_altera_valor(void) {
 void set_sw_altera_valor(void) {
     quadra_t *q = quadra_init("00000-000", 0.0, 0.0, 10.0, 10.0);
 
-    quadra_set_sw(q, "3");
-    TEST_ASSERT_EQUAL_STRING("3", quadra_get_sw(q));
+    quadra_set_stroke_width(q, "3");
+    TEST_ASSERT_EQUAL_STRING("3", quadra_get_stroke_width(q));
 
     quadra_destroy(q);
 }
@@ -102,9 +102,9 @@ void set_cq_altera_todas_as_visuais(void) {
     quadra_t *q = quadra_init("00000-000", 0.0, 0.0, 10.0, 10.0);
 
     quadra_set_cq(q, "2", "green", "black");
-    TEST_ASSERT_EQUAL_STRING("green", quadra_get_corp(q));
-    TEST_ASSERT_EQUAL_STRING("black", quadra_get_corb(q));
-    TEST_ASSERT_EQUAL_STRING("2",     quadra_get_sw(q));
+    TEST_ASSERT_EQUAL_STRING("green", quadra_get_cor_preenchimento(q));
+    TEST_ASSERT_EQUAL_STRING("black", quadra_get_cor_borda(q));
+    TEST_ASSERT_EQUAL_STRING("2",     quadra_get_stroke_width(q));
 
     quadra_destroy(q);
 }
@@ -117,8 +117,8 @@ void set_cq_nao_altera_dados_espaciais(void) {
     TEST_ASSERT_EQUAL_STRING("12345-678", quadra_get_cep(q));
     TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 10.0,  quadra_get_x(q));
     TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 20.0,  quadra_get_y(q));
-    TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 100.0, quadra_get_w(q));
-    TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 50.0,  quadra_get_h(q));
+    TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 100.0, quadra_get_width(q));
+    TEST_ASSERT_DOUBLE_WITHIN(EPSILON, 50.0,  quadra_get_height(q));
 
     quadra_destroy(q);
 }
