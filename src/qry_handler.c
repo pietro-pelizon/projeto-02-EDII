@@ -1,18 +1,11 @@
-//
-// Created by Pietro on 25/05/2026.
-//
-
-#include "../include/qry_handler.h"
-
 #include <assert.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "float.h"
-
-
+#include "../include/qry_handler.h"
 #include "../include/exhash.h"
 #include "../include/lista.h"
 #include "../include/quadra.h"
@@ -22,42 +15,107 @@
 #include "../include/ponto.h"
 #include "../include/rua.h"
 
-static void descobre_componente_conexo(const char *id_start, void *v_data, lista_t *adj_start, void *context);
+// Macro para definir tamanho do bucket independente
+// do tamanho em bytes do dado
+#define EXHASH_BUCKET_BYTES(record_size, n_entries) \
+((sizeof(uint64_t) + (record_size)) * (n_entries) + sizeof(uint16_t) * 2)
 
-typedef struct stRegistrador {
-    char *id; // Identificador do registrador para achar na lista
-    ponto_t *p; // coordenada (x, y)
-}registrador_t;
+/*------------------------------------------------------------------------------------------*/
+/* ----- Structs auxiliares ----- */
+/*------------------------------------------------------------------------------------------*/
 
 // Outra struct de contexto para poder passar para nossa
 // função de iterar pelos vértices do vetor, agora no comando 'regs'
-typedef struct {
+typedef struct stContextoRegs {
     double vl;
-    exhash_t *visitados;    // Guarda a informação de quais vértices já foram visitados,
-    graph_t *g;             // evitando passar pelo mesmo vértice duas vezes
+    exhash_t *visitados;    // evita passar pelo mesmo vértice duas vezes
+    graph_t *g;
     int qtd_componentes;
     FILE *svg;
-}regs_ctx_t;
+} regs_ctx_t;
 
-static int cmp_registradores(void *a, void *b) {
-    registrador_t *reg = a;
-    char *id = b;
-
-    if (strcmp(reg -> id, id) == 0) {
-        return 0;
-    }
-
-    return 1;
-}
+typedef struct stRegistrador {
+    char *id;
+    ponto_t *p;
+} registrador_t;
 
 // Empacotando tudo que o graph_foreach
 // precisa para atualizar a velocidade
 // média das arestas na região especificada
 typedef struct stContextoMvm {
     double rx, ry, rh, rw;
-    double nova_vm;
+    double nova_velocidade_media;
     graph_t *g;
 } mvm_ctx_t;
+
+// Struct que será utilizada na execução
+// do algoritmo de Kruskal para achar MSTs
+typedef struct stKruskal {
+    const char *id_origem;
+    const char *id_destino;
+    edge_t *aresta;
+    double comprimento;
+} kruskal_edge_t;
+
+typedef struct stContextoExp {
+    kruskal_edge_t *array;
+    int index;
+} exp_ctx_t;
+
+static void comando_ao(char *linha_atual, exhash_t *quadras, lista_t *registradores, FILE *svg, FILE *txt);
+static void comando_mvm(char *linha_atual, graph_t *g);
+static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg);
+static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt);
+static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, lista_t *registradores);
+
+static void descobre_componente_conexo(const char *id_start, void *v_data, lista_t *adj_start, void *context);
+static void desenha_caminho(FILE *svg, lista_t *caminho, const char *cor_caminho, graph_t *g);
+static bool is_dentro_da_regiao(double px, double py, double rx, double ry, double rw, double rh);
+static int compara_comprimento_arestas(const void *a, const void *b);
+static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex_data, lista_t *adjacencia, void *contexto);
+static void extrai_arestas(const char *id_origem, void *vertex_data, lista_t *adjacent, void *context);
+static int compara_registradores(void *a, void *b);
+static void registrador_destroy(void *reg);
+
+
+/*------------------------------------------------------------------------------------------*/
+/* ----- Função principal do módulo ----- */
+/*------------------------------------------------------------------------------------------*/
+
+void qry_handler(char *path_qry, graph_t *g, exhash_t *quadras, FILE *svg, FILE *txt) {
+    assert(path_qry);
+
+    FILE *arquivo_qry = fopen(path_qry, "r");
+    assert(arquivo_qry != NULL);
+
+    lista_t *registradores = init_lista();
+
+    char linha[512];
+
+    while (fgets(linha, sizeof(linha), arquivo_qry)) {
+
+        char comando[5] = "";
+        sscanf(linha, "%4s", comando);
+
+        if (strcmp(comando, "@o?") == 0) {
+            comando_ao(linha, quadras, registradores, svg, txt);
+        } else if (strcmp(comando, "mvm") == 0) {
+            comando_mvm(linha, g);
+        } else if (strcmp(comando, "regs") == 0) {
+            comando_regs(linha, g, txt, svg);
+        } else if (strcmp(comando, "exp") == 0) {
+            comando_exp(linha, g, svg, txt);
+        } else if (strcmp(comando, "p?") == 0) {
+            comando_p(linha, g, svg, txt, registradores);
+        }
+    }
+
+    free_lista(registradores, registrador_destroy);
+}
+
+/*------------------------------------------------------------------------------------------*/
+/* ----- Implementação das funções que fazem parsing dos comandos ----- */
+/*------------------------------------------------------------------------------------------*/
 
 static void comando_ao(char *linha_atual, exhash_t *quadras, lista_t *registradores, FILE *svg, FILE *txt) {
     char id_reg[16], cep[32], face;
@@ -77,7 +135,7 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, lista_t *registrado
     // Pegamos a coordenada (x, y) que será salva no registrador
     quadra_get_coord(face, &x, &y, quadra_procurada, numero);
 
-    registrador_t *reg = search_lista(registradores, id_reg, cmp_registradores);
+    registrador_t *reg = search_lista(registradores, id_reg, compara_registradores);
 
     // Se registrador já existe, só atualiza coordenadas
     if (reg != NULL) {
@@ -98,7 +156,6 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, lista_t *registrado
 
     }
 
-
     // Escrevendo info no (.txt)
     fprintf(txt, "[*] @o? %15s %31s %c %lf\n", id_reg, cep, face, numero);
     fprintf(txt, "Ponto do endereço: (%.2lf, %.2lf)\n", x, y);
@@ -106,55 +163,6 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, lista_t *registrado
 
     // Colocando informações visuais no (.svg)
     pos_endereco(svg, x, y, id_reg);
-}
-
-
-/*Atualiza a velocidade média das arestas dentro da
-região (x, y, w, h) para v.*/
-
-// Checa se determinado ponto está dentro da região especificada
-static bool dentro_da_regiao(double px, double py, double rx, double ry, double rw, double rh) {
-    if (px >= rx && px <= rx + rw && py >= ry && py <= ry + rh) {
-        return true;
-    }
-    return false;
-}
-
-static void atualiza_vm_aresta(const char *id_origem, void *vertex_data, lista_t *adjacencia, void *contexto) {
-    mvm_ctx_t *ctx = contexto;
-    ponto_t *pt_origem = vertex_data;
-
-    // Checa se o esquina (vértice/pt_origem) está dentro do retângulo determinado,
-    // caso não esteja, ignoramos todas as ruas (arestas) que saem dele
-    if (!dentro_da_regiao(ponto_get_x(pt_origem), ponto_get_y(pt_origem), ctx -> rx, ctx -> ry, ctx -> rw, ctx -> rh)) {
-        return;
-    }
-
-    // Itera sobre as arestas que saem desse vértice
-    for (nodel_t *no = get_head_node(adjacencia); no != NULL; go_next_node(no)) {
-
-        // Aresta como tipo opaco
-        void *aresta = get_node_data(no);
-
-        // Descobre para onde a aresta vai
-        const char *id_destino = edge_get_target_id(aresta);
-
-        // Pega o vértice de destino
-        void *v_destino = graph_get_vertex(ctx -> g, id_destino);
-
-        // Se não existir, pula a iteração
-        if (!v_destino) continue;
-
-        // Pega as coordenadas do vértice de destino
-        ponto_t *pt_destino = vertex_get_data(v_destino);
-
-        // Se o ponto de destino da aresta estiver dentro do retângulo, ela está
-        // totalmente contida nele, então alteramos sua velocidade média
-        if (dentro_da_regiao(ponto_get_x(pt_destino), ponto_get_y(pt_destino), ctx -> rx, ctx -> ry, ctx -> rw, ctx -> rh)) {
-            rua_t *r = edge_get_data(aresta);
-            set_vm(r, ctx -> nova_vm);
-        }
-    }
 }
 
 static void comando_mvm(char *linha_atual, graph_t *g) {
@@ -168,7 +176,7 @@ static void comando_mvm(char *linha_atual, graph_t *g) {
 
     // Varre o grafo inteiro, checa se as arestas estão
     // na região especificada e atualiza sua velocidade média
-    graph_foreach_vertex(g, atualiza_vm_aresta, &contexto);
+    graph_foreach_vertex(g, atualiza_velocidade_media_aresta, &contexto);
 }
 
 static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg) {
@@ -178,7 +186,7 @@ static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg) {
     sscanf(linha_atual, "regs %lf", &vm_ignorada);
 
     // Cria um hashmap temporário só para guardar as strings dos IDs visitados
-    exhash_t *visitados = exhash_init(sizeof(int), graph_get_nv(g));
+    exhash_t *visitados = exhash_init(sizeof(int), EXHASH_BUCKET_BYTES(sizeof(int), 8));
 
     regs_ctx_t contexto = {vm_ignorada, visitados, g, 0, svg};
 
@@ -192,6 +200,110 @@ static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg) {
     // Destruindo hashmap temporário
     exhash_destroy(visitados);
 }
+
+
+static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
+    assert (g != NULL && linha_atual != NULL);
+
+    double vl;
+
+    // Lendo a linha e pegando info
+    sscanf(linha_atual, "exp %lf", &vl);
+
+    // Assumindo que pela cidade ser nXn,
+    // o máximo de arestas não passa 4 * total vértices
+    int max_arestas = graph_get_total_vertices(g) * 4;
+
+    // ALocando memória para array de arestas
+    kruskal_edge_t *all_arestas = malloc(max_arestas * sizeof(kruskal_edge_t));
+    assert (all_arestas != NULL);
+
+    // Passando para a struct de contexto
+    exp_ctx_t contexto = {all_arestas, 0};
+
+    // Iterando sobre o grafo e colocando as ruas no array
+    graph_foreach_vertex(g, extrai_arestas, &contexto);
+
+
+    // Ordena as arestas por ordem de tamanho (requerido pelo alg de Kruskal)
+    qsort(contexto.array, contexto.index, sizeof(kruskal_edge_t), compara_comprimento_arestas);
+
+    exhash_t *pais = exhash_init(sizeof(char *), EXHASH_BUCKET_BYTES(sizeof(char *), 8));
+
+    // Itera sobre as arestas (ruas) do grafo
+    for (int i = 0; i < contexto.index; i++) {
+        const char *id_origem = contexto.array[i].id_origem;
+        const char *id_destino = contexto.array[i].id_destino;
+
+        // Checa se src e dst já estão interligadas
+        if (strcmp(uf_find(pais, id_origem), uf_find(pais, id_destino)) != 0) {
+
+            // Conecta src e dst (coloca na MST)
+            uf_union(pais, id_origem, id_destino);
+
+            rua_t *rua = edge_get_data(contexto.array[i].aresta);
+
+            // Checa se a rua atende o requisito de vl
+            if (rua_get_velocidade_media(rua) < vl) {
+
+                // Se sim, aumenta sua velocidade média em 50%
+                rua_set_velocidade_media(rua, rua_get_velocidade_media(rua) * 1.5);
+
+                // Chama a função que pinta a aresta de vermelho no (.svg)
+                linha_svg(svg, id_origem, id_destino, g, "red");
+
+            }
+        }
+    }
+
+    
+    fprintf(txt, "[*] exp %.2lf\n", vl);
+
+    exhash_destroy(pais);
+    free(contexto.array);
+
+}
+
+static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, lista_t *registradores) {
+
+    char id_src[32] = "",
+    id_dst[32] = "",
+    cor_rapido[32] = "",
+    cor_curto[32] = "";
+
+    sscanf(linha_atual, "p? %31s %31s %31s %31s", id_src, id_dst, cor_curto, cor_rapido);
+
+    registrador_t *src = search_lista(registradores, id_src, compara_registradores);
+    if (!src) {
+        fprintf(stderr, "Registrador de origem não encontrado!\n");
+        return;
+    }
+    
+    registrador_t *dst = search_lista(registradores, id_dst, compara_registradores);
+    if (!dst) {
+        fprintf(stderr, "Registrador de destino não encontrado!\n");
+        return;
+    }
+    lista_t *caminho_rapido = dijkstra(g, true, src -> id, dst -> id);
+    lista_t *caminho_curto = dijkstra(g, false, src -> id, dst -> id);
+
+    fprintf(txt, "[*] p? %s %s %s %s\n", id_src, id_dst, cor_curto, cor_rapido);
+
+    if (caminho_curto == NULL || caminho_rapido == NULL) {
+        fprintf(txt, "Caminho inacessível!\n");
+        return;
+    }
+
+    desenha_caminho(svg, caminho_rapido, cor_rapido, g);
+    desenha_caminho(svg, caminho_curto, cor_curto, g);
+
+    desenha_placas(svg, id_src, id_dst, g);
+
+}
+
+/*------------------------------------------------------------------------------------------*/
+/* ----- Implementações static ----- */
+/*------------------------------------------------------------------------------------------*/
 
 // Basicamente uma operação de BFS só que com o critério
 // de só considerar ruas com velocidade média ≥ vl
@@ -208,8 +320,8 @@ static void descobre_componente_conexo(const char *id_start, void *v_data, lista
     // Aumenta o contador de componentes
     ctx -> qtd_componentes++;
 
-    double min_x = DBL_MAX, min_y = DBL_MAX;
-    double max_x = DBL_MIN, max_y = DBL_MIN;
+    double min_x = INFINITY, min_y = INFINITY;
+    double max_x = -INFINITY, max_y = -INFINITY;
 
     lista_t *bfs_fila = init_lista();
     assert(bfs_fila != NULL);
@@ -225,10 +337,11 @@ static void descobre_componente_conexo(const char *id_start, void *v_data, lista
 
         // Remove o ID do início da lista
         char *id_atual = remove_head(bfs_fila);
+        fprintf(stderr, "DEBUG: BFS visitando: %s\n", id_atual);
 
         // Pega as coordenadas para o Bounding Box
         vertex_t *v_atual = graph_get_vertex(ctx -> g, id_atual);
-        ponto_t *pt_atual = (ponto_t *)vertex_get_data(v_atual);
+        ponto_t *pt_atual = vertex_get_data(v_atual);
         double px = ponto_get_x(pt_atual);
         double py = ponto_get_y(pt_atual);
 
@@ -247,7 +360,7 @@ static void descobre_componente_conexo(const char *id_start, void *v_data, lista
             rua_t *rua = edge_get_data(aresta);
 
             // Checa se a rua atende o vl especificado
-            if (get_vm(rua) >= ctx -> vl) {
+            if (rua_get_velocidade_media(rua) >= ctx -> vl) {
                 const char *id_destino = edge_get_target_id(aresta);
 
                 // Se não foi visitado, adiciona no exhash de visitados
@@ -263,49 +376,90 @@ static void descobre_componente_conexo(const char *id_start, void *v_data, lista
 
     free_lista(bfs_fila, free);
 
-    // Gera uma cor para cada componente conexo
     char cor[10];
-    cor_aleatoria(cor);
+    gera_cor_aleatoria(cor);
 
-    // Chama função que cuida da manipulação do (.svg) para esse comando
-    rect_componente_conexo(ctx -> svg, cor, min_x, min_y, max_x, max_y);
+    svg_rect_componente_conexo(ctx -> svg, cor, min_x, min_y, max_x, max_y);
 }
 
-// Struct que será utilizada na execução
-// do algoritmo de Kruskal para achar MSTs
-typedef struct {
-    const char *id_origem;
-    const char *id_destino;
-    edge_t *aresta;
-    double comprimento;
-} kruskal_edge_t;
+static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex_data, lista_t *adjacencia, void *contexto) {
+    mvm_ctx_t *ctx = contexto;
+    ponto_t *pt_origem = vertex_data;
 
-typedef struct {
-    kruskal_edge_t *array;
-    int index;
-}exp_ctx_t;
+    // Checa se o esquina (vértice/pt_origem) está dentro do retângulo determinado,
+    // caso não esteja, ignoramos todas as ruas (arestas) que saem dele
+    if (!is_dentro_da_regiao(ponto_get_x(pt_origem), ponto_get_y(pt_origem), ctx -> rx, ctx -> ry, ctx -> rw, ctx -> rh)) {
+        return;
+    }
 
-// Função de callback para algoritmo de Kruskal -
+    // Itera sobre as arestas que saem desse vértice
+
+    for (nodel_t *no = get_head_node(adjacencia); no != NULL; no = go_next_node(no)) {
+
+        // Aresta como tipo opaco
+        void *aresta = get_node_data(no);
+
+        // Descobre para onde a aresta vai
+        const char *id_destino = edge_get_target_id(aresta);
+
+        // Pega o vértice de destino
+        void *v_destino = graph_get_vertex(ctx -> g, id_destino);
+
+        // Se não existir, pula a iteração
+        if (!v_destino) continue;
+
+        // Pega as coordenadas do vértice de destino
+        ponto_t *pt_destino = vertex_get_data(v_destino);
+
+        // Se o ponto de destino da aresta estiver dentro do retângulo, ela está
+        // totalmente contida nele, então alteramos sua velocidade média
+        if (is_dentro_da_regiao(ponto_get_x(pt_destino), ponto_get_y(pt_destino), ctx -> rx, ctx -> ry, ctx -> rw, ctx -> rh)) {
+            rua_t *r = edge_get_data(aresta);
+            rua_set_velocidade_media(r, ctx -> nova_velocidade_media);
+        }
+    }
+}
+
 // Varre o hashmap e coloca todas as arestas (ruas) num array linear
 static void extrai_arestas(const char *id_origem, void *vertex_data, lista_t *adjacent, void *context) {
-    exp_ctx_t *ctx = (exp_ctx_t *)context;
+    exp_ctx_t *ctx = context;
 
     // Varre todas as ruas que saem desta esquina (vértice)
     for (nodel_t *no = get_head_node(adjacent); no != NULL; no = go_next_node(no)) {
-        edge_t *aresta = (edge_t *)get_node_data(no);
-        rua_t *rua = (rua_t *)edge_get_data(aresta);
+        edge_t *aresta = get_node_data(no);
+        rua_t *rua = edge_get_data(aresta);
 
         // Salva tudo na posição atual do array linear
         ctx -> array[ctx -> index].id_origem = id_origem;
         ctx -> array[ctx -> index].id_destino = edge_get_target_id(aresta);
         ctx -> array[ctx -> index].aresta = aresta;
-        ctx -> array[ctx -> index].comprimento = get_cmp(rua);
+        ctx -> array[ctx -> index].comprimento = rua_get_comprimento(rua);
 
         ctx -> index++;
     }
 }
 
-static int compara_cmp_arestas(const void *a, const void *b) {
+static bool is_dentro_da_regiao(double px, double py, double rx, double ry, double rw, double rh) {
+    if (px >= rx && px <= rx + rw && py >= ry && py <= ry + rh) {
+        return true;
+    }
+    return false;
+}
+
+static void desenha_caminho(FILE *svg, lista_t *caminho, const char *cor_caminho, graph_t *g) {
+    nodel_t *atual = get_head_node(caminho);
+
+    while (atual != NULL) {
+        const char *id1 = get_node_data(atual);
+        const char *id2 = get_node_data(go_next_node(atual));
+
+        linha_svg(svg, id1, id2, g, cor_caminho);
+
+        atual = go_next_node(atual);
+    }
+}
+
+static int compara_comprimento_arestas(const void *a, const void *b) {
     kruskal_edge_t *k1 = (kruskal_edge_t *)a;
     kruskal_edge_t *k2 = (kruskal_edge_t *)b;
 
@@ -320,65 +474,23 @@ static int compara_cmp_arestas(const void *a, const void *b) {
     return 0;
 }
 
-static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
-    assert (g != NULL && linha_atual != NULL);
+static int compara_registradores(void *a, void *b) {
+    registrador_t *reg = a;
+    char *id = b;
 
-    double vl;
-
-    // Lendo a linha e pegando info
-    sscanf(linha_atual, "exp %lf", &vl);
-
-    // Assumindo que pela cidade ser nXn,
-    // o máximo de arestas não passa 4 * total vértices
-    int max_arestas = graph_get_nv(g) * 4;
-
-    // ALocando memória para array de arestas
-    kruskal_edge_t *all_arestas = malloc(max_arestas * sizeof(kruskal_edge_t));
-    assert (all_arestas != NULL);
-
-    // Passando para a struct de contexto
-    exp_ctx_t contexto = {all_arestas, 0};
-
-    // Iterando sobre o grafo e colocando as ruas no array
-    graph_foreach_vertex(g, extrai_arestas, &contexto);
-
-
-    // Ordena as arestas por ordem de tamanho (requerido pelo alg de Kruskal)
-    qsort(contexto.array, contexto.index, sizeof(kruskal_edge_t), compara_cmp_arestas);
-
-    exhash_t *pais = exhash_init(sizeof(char *), graph_get_nv(g));
-
-    // Itera sobre as arestas (ruas) do grafo
-    for (int i = 0; i < contexto.index; i++) {
-        const char *id_origem = contexto.array[i].id_origem;
-        const char *id_destino = contexto.array[i].id_destino;
-
-        // Checa se src e dst já estão interligadas
-        if (strcmp(uf_find(pais, id_origem), uf_find(pais, id_destino)) != 0) {
-
-            // Conecta src e dst (coloca na MST)
-            uf_union(pais, id_origem, id_destino);
-
-            rua_t *rua = edge_get_data(contexto.array[i].aresta);
-
-            // Checa se a rua atende o requisito de vl
-            if (get_vm(rua) < vl) {
-
-                // Se sim, aumenta sua velocidade média em 50%
-                set_vm(rua, get_vm(rua) * 1.5);
-
-                // Chama a função que pinta a aresta de vermelho no (.svg)
-                linha_vermelha_exp(svg, id_origem, id_destino, g);
-
-            }
-        }
+    if (strcmp(reg -> id, id) == 0) {
+        return 0;
     }
 
-    
-    fprintf(txt, "[*] exp %.2lf\n", vl);
+    return 1;
+}
 
-    exhash_destroy(pais);
-    free(contexto.array);
+static void registrador_destroy(void *reg) {
+    registrador_t *r = reg;
 
+    free(r -> id);
+    ponto_destroy(r -> p);
+
+    free(r);
 }
 
