@@ -337,7 +337,6 @@ static void descobre_componente_conexo(const char *id_start, void *v_data, lista
 
         // Remove o ID do início da lista
         char *id_atual = remove_head(bfs_fila);
-        fprintf(stderr, "DEBUG: BFS visitando: %s\n", id_atual);
 
         // Pega as coordenadas para o Bounding Box
         vertex_t *v_atual = graph_get_vertex(ctx -> g, id_atual);
