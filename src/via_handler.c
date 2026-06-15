@@ -61,7 +61,11 @@ static void comando_v(char *linha_lida, graph_t *g) {
 }
 
 static void comando_e(char *linha_lida, graph_t *g) {
-    char src_id[16], target_id[16], cep_esq[16], cep_dir[16], nome[128];
+    char src_id[16] = "",
+    target_id[16] = "",
+    cep_esq[16] = "",
+    cep_dir[16] = "",
+    nome[128] = "";
     double cmp, vm;
 
     // %[^\r\n] captura tudo (incluindo espaços) até a quebra de linha
