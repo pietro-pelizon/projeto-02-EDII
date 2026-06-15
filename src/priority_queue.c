@@ -10,14 +10,14 @@
 #include "limits.h"
 
 typedef struct stNodePq{
-    char *id; // CEP da quadra
-    double priority; // Prioridade (menor distância)
+    char *id;
+    double priority;
 }pq_node_t;
 
 typedef struct stPriorityQueue{
-    pq_node_t *array; // Vetor que imita o funcionamento da árvore
-    int size; // Tamanho do vetor
-    int capacity; // Capacidade alocada
+    pq_node_t *array;
+    int size;
+    int capacity;
 }pqueue_t;
 
 static void heapify_up(pqueue_t *pq, int index);
