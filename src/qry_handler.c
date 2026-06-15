@@ -62,18 +62,18 @@ typedef struct stContextoExp {
     int index;
 } exp_ctx_t;
 
-static void comando_ao(char *linha_atual, exhash_t *quadras, lista_t *registradores, FILE *svg, FILE *txt);
+static void comando_ao(char *linha_atual, exhash_t *quadras, list_t *registradores, FILE *svg, FILE *txt);
 static void comando_mvm(char *linha_atual, graph_t *g);
 static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg);
 static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt);
-static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, lista_t *registradores);
+static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_t *registradores);
 
-static void descobre_componente_conexo(const char *id_start, void *v_data, lista_t *adj_start, void *context);
-static void desenha_caminho(FILE *svg, lista_t *caminho, const char *cor_caminho, graph_t *g);
+static void descobre_componente_conexo(const char *id_start, void *v_data, list_t *adj_start, void *context);
+static void desenha_caminho(FILE *svg, list_t *caminho, const char *cor_caminho, graph_t *g);
 static bool is_dentro_da_regiao(double px, double py, double rx, double ry, double rw, double rh);
 static int compara_comprimento_arestas(const void *a, const void *b);
-static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex_data, lista_t *adjacencia, void *contexto);
-static void extrai_arestas(const char *id_origem, void *vertex_data, lista_t *adjacent, void *context);
+static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex_data, list_t *adjacencia, void *contexto);
+static void extrai_arestas(const char *id_origem, void *vertex_data, list_t *adjacent, void *context);
 static int compara_registradores(void *a, void *b);
 static void registrador_destroy(void *reg);
 
@@ -88,7 +88,7 @@ void qry_handler(char *path_qry, graph_t *g, exhash_t *quadras, FILE *svg, FILE 
     FILE *arquivo_qry = fopen(path_qry, "r");
     assert(arquivo_qry != NULL);
 
-    lista_t *registradores = init_lista();
+    list_t *registradores = list_init();
 
     char linha[512];
 
@@ -110,19 +110,23 @@ void qry_handler(char *path_qry, graph_t *g, exhash_t *quadras, FILE *svg, FILE 
         }
     }
 
-    free_lista(registradores, registrador_destroy);
+    list_free(registradores, registrador_destroy);
 }
 
 /*------------------------------------------------------------------------------------------*/
 /* ----- Implementação das funções que fazem parsing dos comandos ----- */
 /*------------------------------------------------------------------------------------------*/
 
-static void comando_ao(char *linha_atual, exhash_t *quadras, lista_t *registradores, FILE *svg, FILE *txt) {
+static void comando_ao(char *linha_atual, exhash_t *quadras, list_t *registradores, FILE *svg, FILE *txt) {
     char id_reg[16], cep[32], face;
     double numero;
 
-    // Lendo a linha atual e coletando os dados
-    sscanf(linha_atual, "@o? %15s %31s %c %lf", id_reg, cep, &face, &numero);
+    int lidos = sscanf(linha_atual, "@o? %15s %31s %c %lf", id_reg, cep, &face, &numero);
+    if (lidos != 4) {
+        fprintf(stderr, "ERRO: linha mal formatada no comando '@a?'\n");
+        return;
+    }
+
 
 
     // Procurando a quadra para fazer os cálculos
@@ -135,7 +139,7 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, lista_t *registrado
     // Pegamos a coordenada (x, y) que será salva no registrador
     quadra_get_coord(face, &x, &y, quadra_procurada, numero);
 
-    registrador_t *reg = search_lista(registradores, id_reg, compara_registradores);
+    registrador_t *reg = list_search(registradores, id_reg, compara_registradores);
 
     // Se registrador já existe, só atualiza coordenadas
     if (reg != NULL) {
@@ -152,7 +156,7 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, lista_t *registrado
         ponto_set_x(novo_reg -> p, x);
         ponto_set_y(novo_reg -> p, y);
 
-        insert_head(registradores, novo_reg);
+        list_push_front(registradores, novo_reg);
 
     }
 
@@ -162,14 +166,18 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, lista_t *registrado
 
 
     // Colocando informações visuais no (.svg)
-    pos_endereco(svg, x, y, id_reg);
+    svg_posicao_endereco(svg, x, y, id_reg);
 }
 
 static void comando_mvm(char *linha_atual, graph_t *g) {
     double nova_vm = 0, x = 0, y = 0, w = 0, h = 0;
 
     // Coleta os dados da linha atual
-    sscanf(linha_atual, "mvm %lf %lf %lf %lf %lf", &nova_vm, &x, &y, &w, &h);
+    int lidos = sscanf(linha_atual, "mvm %lf %lf %lf %lf %lf", &nova_vm, &x, &y, &w, &h);
+    if (lidos != 5) {
+        fprintf(stderr, "ERRO: linha mal formatada no comando 'mvm'\n");
+        return;
+    }
 
     // Prepara a wrapper (struct de contexto) com os dados
     mvm_ctx_t contexto = { x, y, w, h, nova_vm, g };
@@ -183,7 +191,11 @@ static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg) {
     double vm_ignorada = 0;
 
     // Coleta os dados da linha atual
-    sscanf(linha_atual, "regs %lf", &vm_ignorada);
+    int lidos = sscanf(linha_atual, "regs %lf", &vm_ignorada);
+    if (lidos != 1) {
+        fprintf(stderr, "ERRO: linha mal formatada no comando 'regs'\n");
+        return;
+    }
 
     // Cria um hashmap temporário só para guardar as strings dos IDs visitados
     exhash_t *visitados = exhash_init(sizeof(int), EXHASH_BUCKET_BYTES(sizeof(int), 8));
@@ -198,7 +210,7 @@ static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg) {
     fprintf(txt, "%d\n", contexto.qtd_componentes);
 
     // Destruindo hashmap temporário
-    exhash_destroy(visitados);
+    exhash_destroy(visitados, NULL);
 }
 
 
@@ -208,13 +220,17 @@ static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
     double vl;
 
     // Lendo a linha e pegando info
-    sscanf(linha_atual, "exp %lf", &vl);
+    int lidos = sscanf(linha_atual, "exp %lf", &vl);
+    if (lidos != 1) {
+        fprintf(stderr, "ERRO: linha mal formatada no comando 'exp'\n");
+        return;
+    }
 
     // Assumindo que pela cidade ser nXn,
     // o máximo de arestas não passa 4 * total vértices
     int max_arestas = graph_get_total_vertices(g) * 4;
 
-    // ALocando memória para array de arestas
+    // Alocando memória para array de arestas
     kruskal_edge_t *all_arestas = malloc(max_arestas * sizeof(kruskal_edge_t));
     assert (all_arestas != NULL);
 
@@ -250,7 +266,7 @@ static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
                 rua_set_velocidade_media(rua, rua_get_velocidade_media(rua) * 1.5);
 
                 // Chama a função que pinta a aresta de vermelho no (.svg)
-                linha_svg(svg, id_origem, id_destino, g, "red");
+                svg_linha_caminho(svg, id_origem, id_destino, g, "red");
 
             }
         }
@@ -259,33 +275,37 @@ static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
     
     fprintf(txt, "[*] exp %.2lf\n", vl);
 
-    exhash_destroy(pais);
+    exhash_destroy(pais, NULL);
     free(contexto.array);
 
 }
 
-static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, lista_t *registradores) {
+static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_t *registradores) {
 
     char id_src[32] = "",
     id_dst[32] = "",
     cor_rapido[32] = "",
     cor_curto[32] = "";
 
-    sscanf(linha_atual, "p? %31s %31s %31s %31s", id_src, id_dst, cor_curto, cor_rapido);
+    int lidos = sscanf(linha_atual, "p? %31s %31s %31s %31s", id_src, id_dst, cor_curto, cor_rapido);
+    if (lidos != 4) {
+        fprintf(stderr, "ERRO: linha mal formatada no comando 'p?'\n");
+        return;
+    }
 
-    registrador_t *src = search_lista(registradores, id_src, compara_registradores);
+    registrador_t *src = list_search(registradores, id_src, compara_registradores);
     if (!src) {
         fprintf(stderr, "Registrador de origem não encontrado!\n");
         return;
     }
     
-    registrador_t *dst = search_lista(registradores, id_dst, compara_registradores);
+    registrador_t *dst = list_search(registradores, id_dst, compara_registradores);
     if (!dst) {
         fprintf(stderr, "Registrador de destino não encontrado!\n");
         return;
     }
-    lista_t *caminho_rapido = dijkstra(g, true, src -> id, dst -> id);
-    lista_t *caminho_curto = dijkstra(g, false, src -> id, dst -> id);
+    list_t *caminho_rapido = dijkstra(g, true, src -> id, dst -> id);
+    list_t *caminho_curto = dijkstra(g, false, src -> id, dst -> id);
 
     fprintf(txt, "[*] p? %s %s %s %s\n", id_src, id_dst, cor_curto, cor_rapido);
 
@@ -297,7 +317,7 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, lista
     desenha_caminho(svg, caminho_rapido, cor_rapido, g);
     desenha_caminho(svg, caminho_curto, cor_curto, g);
 
-    desenha_placas(svg, id_src, id_dst, g);
+    svg_desenha_placas(svg, id_src, id_dst, g);
 
 }
 
@@ -307,7 +327,7 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, lista
 
 // Basicamente uma operação de BFS só que com o critério
 // de só considerar ruas com velocidade média ≥ vl
-static void descobre_componente_conexo(const char *id_start, void *v_data, lista_t *adj_start, void *context) {
+static void descobre_componente_conexo(const char *id_start, void *v_data, list_t *adj_start, void *context) {
     assert(id_start != NULL && v_data != NULL && adj_start != NULL && context != NULL);
 
     regs_ctx_t *ctx = context;
@@ -323,20 +343,20 @@ static void descobre_componente_conexo(const char *id_start, void *v_data, lista
     double min_x = INFINITY, min_y = INFINITY;
     double max_x = -INFINITY, max_y = -INFINITY;
 
-    lista_t *bfs_fila = init_lista();
+    list_t *bfs_fila = list_init();
     assert(bfs_fila != NULL);
 
     // Enfileira a origem
-    insert_tail(bfs_fila, (void*)id_start);
+    list_push_back(bfs_fila, (void*)id_start);
 
     // Marca a origem como visitada no hashmap
     int dummy = 1;
     exhash_insert(ctx -> visitados, &dummy, id_start);
 
-    while (get_head_node(bfs_fila) != NULL) {
+    while (list_node_front(bfs_fila) != NULL) {
 
         // Remove o ID do início da lista
-        char *id_atual = remove_head(bfs_fila);
+        char *id_atual = list_pop_front(bfs_fila);
 
         // Pega as coordenadas para o Bounding Box
         vertex_t *v_atual = graph_get_vertex(ctx -> g, id_atual);
@@ -351,11 +371,11 @@ static void descobre_componente_conexo(const char *id_start, void *v_data, lista
 
 
         // Pega a lista de adjacência do vértice atual
-        lista_t *adj_atual = graph_get_neighbors(ctx -> g, id_atual);
+        list_t *adj_atual = graph_get_neighbors(ctx -> g, id_atual);
 
         // Itera sobre todas as arestas (ruas) que saem desse vértice
-        for (nodel_t *no = get_head_node(adj_atual); no != NULL; no = go_next_node(no)) {
-            edge_t *aresta = get_node_data(no);
+        for (list_node_t *no = list_node_front(adj_atual); no != NULL; no = list_node_next(no)) {
+            edge_t *aresta = list_node_data(no);
             rua_t *rua = edge_get_data(aresta);
 
             // Checa se a rua atende o vl especificado
@@ -366,14 +386,14 @@ static void descobre_componente_conexo(const char *id_start, void *v_data, lista
                 if (!exhash_search(ctx -> visitados, id_destino, NULL)) {
                     exhash_insert(ctx -> visitados, &dummy, id_destino);
 
-                    insert_tail(bfs_fila, (void *)id_destino);
+                    list_push_back(bfs_fila, (void *)id_destino);
                 }
             }
         }
     }
 
 
-    free_lista(bfs_fila, free);
+    list_free(bfs_fila, free);
 
     char cor[10];
     gera_cor_aleatoria(cor);
@@ -381,7 +401,15 @@ static void descobre_componente_conexo(const char *id_start, void *v_data, lista
     svg_rect_componente_conexo(ctx -> svg, cor, min_x, min_y, max_x, max_y);
 }
 
-static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex_data, lista_t *adjacencia, void *contexto) {
+static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex_data, list_t *adjacencia, void *contexto) {
+
+    // Diz ao compilador que o parâmetro está sendo ignorado.
+
+    // @note: não posso retirar, pois a assinatura da função precisa
+    // ser compatível com o callback da função "graph_foreach_vertex"
+
+    (void)id_origem;
+
     mvm_ctx_t *ctx = contexto;
     ponto_t *pt_origem = vertex_data;
 
@@ -393,10 +421,10 @@ static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex
 
     // Itera sobre as arestas que saem desse vértice
 
-    for (nodel_t *no = get_head_node(adjacencia); no != NULL; no = go_next_node(no)) {
+    for (list_node_t *no = list_node_front(adjacencia); no != NULL; no = list_node_next(no)) {
 
         // Aresta como tipo opaco
-        void *aresta = get_node_data(no);
+        void *aresta = list_node_data(no);
 
         // Descobre para onde a aresta vai
         const char *id_destino = edge_get_target_id(aresta);
@@ -420,15 +448,21 @@ static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex
 }
 
 // Varre o hashmap e coloca todas as arestas (ruas) num array linear
-static void extrai_arestas(const char *id_origem, void *vertex_data, lista_t *adjacent, void *context) {
+static void extrai_arestas(const char *id_origem, void *vertex_data, list_t *adjacent, void *context) {
     exp_ctx_t *ctx = context;
 
+    // Diz ao compilador que o parâmetro está sendo ignorado.
+
+    // @note: não posso retirar, pois a assinatura da função precisa
+    // ser compatível com o callback da função "graph_foreach_vertex"
+    (void)vertex_data;
+
     // Varre todas as ruas que saem desta esquina (vértice)
-    for (nodel_t *no = get_head_node(adjacent); no != NULL; no = go_next_node(no)) {
-        edge_t *aresta = get_node_data(no);
+    for (list_node_t *no = list_node_front(adjacent); no != NULL; no = list_node_next(no)) {
+        edge_t *aresta = list_node_data(no);
         rua_t *rua = edge_get_data(aresta);
 
-        // Salva tudo na posição atual do array linear
+        // salva tudo na posição atual do array linear
         ctx -> array[ctx -> index].id_origem = id_origem;
         ctx -> array[ctx -> index].id_destino = edge_get_target_id(aresta);
         ctx -> array[ctx -> index].aresta = aresta;
@@ -445,16 +479,16 @@ static bool is_dentro_da_regiao(double px, double py, double rx, double ry, doub
     return false;
 }
 
-static void desenha_caminho(FILE *svg, lista_t *caminho, const char *cor_caminho, graph_t *g) {
-    nodel_t *atual = get_head_node(caminho);
+static void desenha_caminho(FILE *svg, list_t *caminho, const char *cor_caminho, graph_t *g) {
+    list_node_t *atual = list_node_front(caminho);
 
     while (atual != NULL) {
-        const char *id1 = get_node_data(atual);
-        const char *id2 = get_node_data(go_next_node(atual));
+        const char *id1 = list_node_data(atual);
+        const char *id2 = list_node_data(list_node_next(atual));
 
-        linha_svg(svg, id1, id2, g, cor_caminho);
+        svg_linha_caminho(svg, id1, id2, g, cor_caminho);
 
-        atual = go_next_node(atual);
+        atual = list_node_next(atual);
     }
 }
 
