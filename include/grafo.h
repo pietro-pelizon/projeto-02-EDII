@@ -92,8 +92,8 @@ bool graph_remove_vertex(graph_t *g, const char *vertex_id);
 /// @brief Retorna a estrutura que armazena os vizinhos (arestas de saída) de um vértice
 /// @param g Ponteiro para o grafo
 /// @param vertex_id Identificador do vértice
-/// @return Ponteiro para a lista_t contendo as arestas, ou NULL se o vértice não existir
-lista_t *graph_get_neighbors(graph_t *g, const char *vertex_id);
+/// @return Ponteiro para a list_t contendo as arestas, ou NULL se o vértice não existir
+list_t *graph_get_neighbors(graph_t *g, const char *vertex_id);
 
 /// @brief Destrói o grafo inteiro, liberando vértices, arestas e estruturas internas
 /// @param g Ponteiro para o grafo a ser destruído
@@ -117,7 +117,7 @@ exhash_t *graph_get_exhash(graph_t *g);
 /// @param g Ponteiro para o grafo
 /// @param callback Função de callback da ação
 /// @param context Contexto necessário para saber se deve ou não realizar a ação
-void graph_foreach_vertex(graph_t *g, void (*callback)(const char *id, void *vertex_data, lista_t *adjacent, void *context), void *context);
+void graph_foreach_vertex(graph_t *g, void (*callback)(const char *id, void *vertex_data, list_t *adjacent, void *context), void *context);
 
 /// @param v Ponteiro para o vértice
 /// @return Dado interno do vértice
@@ -131,5 +131,17 @@ const char *edge_get_target_id(edge_t *e);
 /// @return Retorna o dado interno da aresta
 void *edge_get_data(edge_t *e);
 
+/* ___________________________________________________________________ */
+
+/// @brief Usando o algoritmo criado por Dijkstra, descobre o caminho
+/// mais eficiente para ir do ponto A até ponto B num grafo ponderado
+/// @param g Ponteiro para o grafo
+/// @param flag_tempo Decide se irá calcular considerando tempo mínimo
+/// de travessia ou caminho mais curto
+/// @param id_src Identificador do ponto de origem
+/// @param id_dst Identificador do ponto de destino
+/// @return Retorna uma lista ordenada com os identificadores
+/// dos vértices que compoem o melhor caminho
+list_t *dijkstra(graph_t *g, bool flag_tempo, char *id_src,  char *id_dst);
 
 #endif //PROJETO_02_EDII_GRAFO_H
