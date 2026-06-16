@@ -27,11 +27,11 @@ void svg_quadra_insert(FILE *svg, const quadra_t *q) {
 		quadra_get_cep(q),
 		quadra_get_x(q),
 		quadra_get_y(q),
-		quadra_get_w(q),
-		quadra_get_h(q),
-		quadra_get_corb(q),
-		quadra_get_corp(q),
-		quadra_get_sw(q), 0.5);
+		quadra_get_width(q),
+		quadra_get_height(q),
+		quadra_get_cor_borda(q),
+		quadra_get_cor_preenchimento(q),
+		quadra_get_stroke_width(q), 0.5);
 
 	fprintf(svg, "\t<text x=\"%lf\" y=\"%lf\" font-family=\"Arial\" font-size=\"12\" fill=\"black\">%s</text>\n",
 		quadra_get_x(q),
@@ -39,7 +39,7 @@ void svg_quadra_insert(FILE *svg, const quadra_t *q) {
 		quadra_get_cep(q));
 }
 
-void fecha_svg(FILE *svg) {
+void svg_close(FILE *svg) {
 	if (svg == NULL) return;
 
 	fprintf(svg, "</g>\n");
@@ -49,12 +49,12 @@ void fecha_svg(FILE *svg) {
 	fclose(svg);
 }
 
-void pos_endereco(FILE *svg, double x, double y, char *id) {
+void svg_posicao_endereco(FILE *svg, double x, double y, char *id) {
 	fprintf(svg, "<line x1=\"%.2lf\" y1=\"%.2lf\" x2=\"%.2lf\" y2=\"10\" stroke=\"red\" stroke-dasharray=\"5,5\" />\n", x, y, x);
 	fprintf(svg, "<text x=\"%.2lf\" y=\"10\" fill=\"red\" font-size=\"12\">%s</text>\n", x, id);
 }
 
-void rect_componente_conexo(FILE *svg, char *cor, double min_x, double min_y, double max_x, double max_y){
+void svg_rect_componente_conexo(FILE *svg, char *cor, double min_x, double min_y, double max_x, double max_y){
 	double height = max_x - min_x;
 	double width = max_y - min_y;
 
@@ -62,7 +62,7 @@ void rect_componente_conexo(FILE *svg, char *cor, double min_x, double min_y, do
 			min_x, min_y, width, height, cor, cor);
 }
 
-void linha_vermelha_exp(FILE *svg, const char *id_origem, const char *id_destino, graph_t *g) {
+void svg_linha_caminho(FILE *svg, const char *id_origem, const char *id_destino, graph_t *g, const char *cor) {
 	vertex_t *src = graph_get_vertex(g, id_origem);
 	vertex_t *dst = graph_get_vertex(g, id_destino);
 
@@ -72,6 +72,28 @@ void linha_vermelha_exp(FILE *svg, const char *id_origem, const char *id_destino
 	double x1 = ponto_get_x(p_src), y1 = ponto_get_y(p_src);
 	double x2 = ponto_get_x(p_dst), y2 = ponto_get_y(p_dst);
 
-	fprintf(svg, "<line x1=\"%.2lf\" y1=\"%.2lf\" x2=\"%.2lf\" y2=\"%.2lf\" stroke=\"red\" stroke-width=\"6\" />\n",
-		x1, y1, x2, y2);
+	fprintf(svg, "<line x1=\"%.2lf\" y1=\"%.2lf\" x2=\"%.2lf\" y2=\"%.2lf\" stroke=\"%s\" stroke-width=\"6\" />\n",
+		x1, y1, x2, y2, cor);
 }
+
+void svg_desenha_placas(FILE *svg, const char *id_src, const char *id_dst, graph_t *g) {
+	vertex_t *src = graph_get_vertex(g, id_src);
+	vertex_t *dst = graph_get_vertex(g, id_dst);
+
+	ponto_t *p_src = vertex_get_data(src);
+	ponto_t *p_dst = vertex_get_data(dst);
+
+	double x1 = ponto_get_x(p_src), y1 = ponto_get_y(p_src);
+	double x2 = ponto_get_x(p_dst), y2 = ponto_get_y(p_dst);
+
+	fprintf(svg,
+		"<circle cx=\"%.2lf\" cy=\"%.2lf\" r=\"12\" fill=\"white\" stroke=\"black\" stroke-width=\"2\" />\n"
+		"<text x=\"%.2lf\" y=\"%.2lf\" font-family=\"Arial\" font-size=\"14\" font-weight=\"bold\" fill=\"black\" text-anchor=\"middle\" dominant-baseline=\"central\">I</text>\n"
+
+		"<circle cx=\"%.2lf\" cy=\"%.2lf\" r=\"12\" fill=\"white\" stroke=\"black\" stroke-width=\"2\" />\n"
+		"<text x=\"%.2lf\" y=\"%.2lf\" font-family=\"Arial\" font-size=\"14\" font-weight=\"bold\" fill=\"black\" text-anchor=\"middle\" dominant-baseline=\"central\">F</text>\n",
+		x1, y1, x1, y1,
+		x2, y2, x2, y2
+	);
+}
+
