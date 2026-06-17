@@ -32,12 +32,10 @@ typedef struct stGraph graph_t;
 
 /// @brief Inicializa um grafo com as funções corretas para manipular
 /// os tipos de dados do vértice e aresta
-/// @param comparator Função para comparar dois elementos genéricos
 /// @param destructor_edge_data Função para liberar o payload (data) da aresta
 /// @param destructor_vertex_data Função para liberar o payload (data) do vértice
 /// @return Retorna um ponteiro para o grafo criado ou NULL se falhar
-graph_t *graph_init(void (*comparator)(void *a, void *b),
-    void (*destructor_edge_data)(void *data),
+graph_t *graph_init(void (*destructor_edge_data)(void *data),
     void (*destructor_vertex_data)(void *data));
 
 /// @brief Adiciona um vértice ao grafo contendo "void *data"

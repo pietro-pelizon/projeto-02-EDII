@@ -51,12 +51,11 @@ typedef struct stEdge {
 typedef struct stGraph {
     exhash_t *vertices;
     int total_vertices;
-    void (*comparator)(void *a, void *b);
     void (*destructor_edge_data)(void *data);
     void (*destructor_vertex_data)(void *data);
 }graph_t;
 
-graph_t *graph_init(void (*comparator)(void *a, void *b),
+graph_t *graph_init(
     void (*destructor_edge_data)(void *data),
     void (*destructor_vertex_data)(void *data)) {
 
@@ -67,7 +66,6 @@ graph_t *graph_init(void (*comparator)(void *a, void *b),
 
     new_graph -> total_vertices = 0;
 
-    new_graph -> comparator = comparator;
     new_graph -> destructor_edge_data = destructor_edge_data;
     new_graph -> destructor_vertex_data = destructor_vertex_data;
 
@@ -484,8 +482,9 @@ list_t *dijkstra(graph_t *g, bool flag_tempo, char *id_src,  char *id_dst) {
         if (strcmp(atual, id_src) == 0) {
             break;
         }
-
-        exhash_search(pais, atual, &atual);
+        const char *prox = NULL;
+        if (!exhash_search(pais, atual, &prox)) break;
+        atual = prox;
     }
 
     pq_destroy(min_heap);
