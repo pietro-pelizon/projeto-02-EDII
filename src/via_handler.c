@@ -1,15 +1,11 @@
 #include "../include/via_handler.h"
 #include "../include/grafo.h"
-#include "../include/quadra.h"
 #include "../include/rua.h"
 
 #include <assert.h>
-#include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "../include/exhash.h"
 #include "../include/ponto.h"
 
 static void comando_v(char *linha_lida, graph_t *g);
@@ -51,7 +47,11 @@ static void comando_v(char *linha_lida, graph_t *g) {
     char id[16];
     double x, y;
 
-    sscanf(linha_lida, "v %15s %lf %lf", id, &x, &y);
+    int lidos = sscanf(linha_lida, "v %15s %lf %lf", id, &x, &y);
+    if (lidos != 3) {
+        fprintf(stderr, "ERRO: Linha mal formatada no arquivo (.via) - comando: 'v'\n");
+        return;
+    }
 
     ponto_t *p = ponto_init(x, y);
     assert(p);
@@ -69,7 +69,12 @@ static void comando_e(char *linha_lida, graph_t *g) {
     double cmp, vm;
 
     // %[^\r\n] captura tudo (incluindo espaços) até a quebra de linha
-    sscanf(linha_lida, "e %15s %15s %15s %15s %lf %lf %[^\r\n]", src_id, target_id, cep_dir, cep_esq, &cmp, &vm, nome);
+    int lidos = sscanf(linha_lida, "e %15s %15s %15s %15s %lf %lf %[^\r\n]", src_id, target_id, cep_dir, cep_esq, &cmp, &vm, nome);
+    if (lidos != 7) {
+        fprintf(stderr, "ERRO: Linha mal formatada no arquivo (.via) - comando: 'e'\n");
+        return;
+    }
+
 
     rua_t *r = rua_init(cep_esq, cep_dir, nome, vm, cmp);
     assert(r);
