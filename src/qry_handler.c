@@ -127,8 +127,6 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, list_t *registrador
         return;
     }
 
-
-
     // Procurando a quadra para fazer os cálculos
     // a partir de seu ponto de ancoragem
     quadra_t *quadra_procurada = NULL;
@@ -153,9 +151,7 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, list_t *registrador
         registrador_t *novo_reg = malloc(sizeof(registrador_t));
         assert(novo_reg);
         novo_reg -> id = my_strdup(id_reg);
-        ponto_set_x(novo_reg -> p, x);
-        ponto_set_y(novo_reg -> p, y);
-
+        novo_reg -> p = ponto_init(x, y);
         list_push_front(registradores, novo_reg);
 
     }
@@ -482,7 +478,7 @@ static bool is_dentro_da_regiao(double px, double py, double rx, double ry, doub
 static void desenha_caminho(FILE *svg, list_t *caminho, const char *cor_caminho, graph_t *g) {
     list_node_t *atual = list_node_front(caminho);
 
-    while (atual != NULL) {
+    while (atual != NULL && list_node_next(atual) != NULL) {
         const char *id1 = list_node_data(atual);
         const char *id2 = list_node_data(list_node_next(atual));
 
