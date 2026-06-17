@@ -123,7 +123,7 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, list_t *registrador
 
     int lidos = sscanf(linha_atual, "@o? %15s %31s %c %lf", id_reg, cep, &face, &numero);
     if (lidos != 4) {
-        fprintf(stderr, "ERRO: linha mal formatada no comando '@a?'\n");
+        fprintf(stderr, "ERRO: linha mal formatada no arquivo (.qry) - comando: '@a?'\n");
         return;
     }
 
@@ -177,7 +177,7 @@ static void comando_mvm(char *linha_atual, graph_t *g) {
     // Coleta os dados da linha atual
     int lidos = sscanf(linha_atual, "mvm %lf %lf %lf %lf %lf", &nova_vm, &x, &y, &w, &h);
     if (lidos != 5) {
-        fprintf(stderr, "ERRO: linha mal formatada no comando 'mvm'\n");
+        fprintf(stderr, "ERRO: linha mal formatada no arquivo (.qry) - comando: 'mvm'\n");
         return;
     }
 
@@ -224,7 +224,7 @@ static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
     // Lendo a linha e pegando info
     int lidos = sscanf(linha_atual, "exp %lf", &vl);
     if (lidos != 1) {
-        fprintf(stderr, "ERRO: linha mal formatada no comando 'exp'\n");
+        fprintf(stderr, "ERRO: linha mal formatada no arquivo (.qry) - comando: 'exp'\n");
         return;
     }
 
@@ -291,7 +291,7 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_
 
     int lidos = sscanf(linha_atual, "p? %31s %31s %31s %31s", id_src, id_dst, cor_curto, cor_rapido);
     if (lidos != 4) {
-        fprintf(stderr, "ERRO: linha mal formatada no comando 'p?'\n");
+        fprintf(stderr, "ERRO: linha mal formatada no arquivo (.qry) - comando: 'p?'\n");
         return;
     }
 
@@ -311,15 +311,19 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_
 
     fprintf(txt, "[*] p? %s %s %s %s\n", id_src, id_dst, cor_curto, cor_rapido);
 
-    if (caminho_curto == NULL || caminho_rapido == NULL) {
+    if (list_size(caminho_curto) == 0 || list_size(caminho_rapido) == 0) {
         fprintf(txt, "Caminho inacessível!\n");
-        return;
     }
 
-    desenha_caminho(svg, caminho_rapido, cor_rapido, g);
-    desenha_caminho(svg, caminho_curto, cor_curto, g);
+    else {
+        desenha_caminho(svg, caminho_rapido, cor_rapido, g);
+        desenha_caminho(svg, caminho_curto, cor_curto, g);
+        svg_desenha_placas(svg, id_src, id_dst, g);
+    }
 
-    svg_desenha_placas(svg, id_src, id_dst, g);
+
+    list_free(caminho_rapido, free);
+    list_free(caminho_curto, free);
 
 }
 
