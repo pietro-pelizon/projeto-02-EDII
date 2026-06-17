@@ -347,18 +347,21 @@ static void vertex_destroy_internal(void *record_data, void *context) {
     vertex_t *v = *(vertex_t **)record_data;
     graph_t *g = (graph_t *)context;
 
-    // Destrói todas as arestas que saem deste vértice
-    if (v -> adjacent) {
-        list_free(v -> adjacent, edge_destroy_internal);
+    for (list_node_t *no = list_node_front(v -> adjacent); no != NULL; no = list_node_next(no)) {
+        edge_t *e = list_node_data(no);
+        free(e -> target_id);
+        free(e -> id);
+        if (g -> destructor_edge_data && e -> data) {
+            g -> destructor_edge_data(e -> data);
+        }
+        free(e);
     }
+    list_free(v -> adjacent, NULL);
 
-    // Destrói o payload do vértice (struct quadra/coordenadas)
     if (g -> destructor_vertex_data && v -> data) {
         g -> destructor_vertex_data(v -> data);
     }
-
-    // Libera os componentes do vértice
-    if (v -> id) free(v -> id);
+    free(v -> id);
     free(v);
 }
 
