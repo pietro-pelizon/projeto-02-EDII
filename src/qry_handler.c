@@ -118,10 +118,10 @@ void qry_handler(char *path_qry, graph_t *g, exhash_t *quadras, FILE *svg, FILE 
 /*------------------------------------------------------------------------------------------*/
 
 static void comando_ao(char *linha_atual, exhash_t *quadras, list_t *registradores, FILE *svg, FILE *txt) {
-    char id_reg[16], cep[32], face;
+    char id_reg[64], cep[64], face;
     double numero;
 
-    int lidos = sscanf(linha_atual, "@o? %15s %31s %c %lf", id_reg, cep, &face, &numero);
+    int lidos = sscanf(linha_atual, "@o? %63s %63s %c %lf", id_reg, cep, &face, &numero);
     if (lidos != 4) {
         fprintf(stderr, "ERRO: linha mal formatada no arquivo (.qry) - comando: '@a?'\n");
         return;
@@ -219,7 +219,7 @@ static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg) {
 static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
     assert (g != NULL && linha_atual != NULL);
 
-    double vl;
+    double vl = 0;
 
     // Lendo a linha e pegando info
     int lidos = sscanf(linha_atual, "exp %lf", &vl);
@@ -284,12 +284,12 @@ static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
 
 static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_t *registradores) {
 
-    char id_src[32] = "",
-    id_dst[32] = "",
-    cor_rapido[32] = "",
-    cor_curto[32] = "";
+    char id_src[64] = "",
+    id_dst[64] = "",
+    cor_rapido[64] = "",
+    cor_curto[64] = "";
 
-    int lidos = sscanf(linha_atual, "p? %31s %31s %31s %31s", id_src, id_dst, cor_curto, cor_rapido);
+    int lidos = sscanf(linha_atual, "p? %63s %63s %63s %63s", id_src, id_dst, cor_curto, cor_rapido);
     if (lidos != 4) {
         fprintf(stderr, "ERRO: linha mal formatada no arquivo (.qry) - comando: 'p?'\n");
         return;
@@ -514,8 +514,8 @@ static int compara_comprimento_arestas(const void *a, const void *b) {
 }
 
 static int compara_registradores(void *a, void *b) {
-    registrador_t *reg = a;
-    char *id = b;
+    char *id = a;
+    registrador_t *reg = b;
 
     if (strcmp(reg -> id, id) == 0) {
         return 0;
