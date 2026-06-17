@@ -233,7 +233,6 @@ bool graph_remove_vertex(graph_t *g, const char *vertex_id) {
     // Remove id e dados
     free(v -> id);
     if (g -> destructor_vertex_data && v -> data) {
-
         g -> destructor_vertex_data(v -> data);
     }
 
@@ -363,6 +362,7 @@ static void remove_neighbors_edges(void *record_data, void *context) {
 
     if (aresta_removida) {
         free(aresta_removida -> target_id);
+        free(aresta_removida -> id);
         if (ctx -> destructor_edge_data && aresta_removida -> data) {
             ctx -> destructor_edge_data(aresta_removida -> data);
         }
