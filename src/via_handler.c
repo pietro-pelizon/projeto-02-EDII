@@ -44,10 +44,10 @@ void via_handler(char *path_via, graph_t *g) {
 static void comando_v(char *linha_lida, graph_t *g) {
     assert(g);
 
-    char id[16];
-    double x, y;
+    char id[64];
+    double x = 0, y = 0;
 
-    int lidos = sscanf(linha_lida, "v %15s %lf %lf", id, &x, &y);
+    int lidos = sscanf(linha_lida, "v %63s %lf %lf", id, &x, &y);
     if (lidos != 3) {
         fprintf(stderr, "ERRO: Linha mal formatada no arquivo (.via) - comando: 'v'\n");
         return;
@@ -61,15 +61,15 @@ static void comando_v(char *linha_lida, graph_t *g) {
 }
 
 static void comando_e(char *linha_lida, graph_t *g) {
-    char src_id[16] = "",
-    target_id[16] = "",
-    cep_esq[16] = "",
-    cep_dir[16] = "",
+    char src_id[64] = "",
+    target_id[64] = "",
+    cep_esq[64] = "",
+    cep_dir[64] = "",
     nome[128] = "";
-    double cmp, vm;
+    double cmp = 0, vm = 0;
 
     // %[^\r\n] captura tudo (incluindo espaços) até a quebra de linha
-    int lidos = sscanf(linha_lida, "e %15s %15s %15s %15s %lf %lf %[^\r\n]", src_id, target_id, cep_dir, cep_esq, &cmp, &vm, nome);
+    int lidos = sscanf(linha_lida, "e %63s %63s %63s %63s %lf %lf %127[^\r\n]", src_id, target_id, cep_dir, cep_esq, &cmp, &vm, nome);
     if (lidos != 7) {
         fprintf(stderr, "ERRO: Linha mal formatada no arquivo (.via) - comando: 'e'\n");
         return;
