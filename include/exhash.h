@@ -51,6 +51,7 @@ void exhash_foreach(const exhash_t *map, void (*action)(void *data, void *contex
 
 /// @brief Libera toda a memória RAM utilizada pelo Hash Map (diretório, baldes e dados).
 /// @param map Ponteiro para o Hash Map.
-void exhash_destroy(exhash_t *map);
+/// @param free_data Função que sabe como dar free no dado 
+void exhash_destroy(exhash_t *map, void (*free_data)(void *data));
 
 #endif

@@ -4,9 +4,7 @@
 
 #include <stdio.h>
 
-#include "exhash.h"
 #include "grafo.h"
-#include "ponto.h"
 #include "quadra.h"
 
 /*
@@ -16,7 +14,7 @@
  * Ele provê funcionalidades para:
  *
  * Gerenciamento de Arquivo: Controlar o ciclo de vida do arquivo SVG,
- * incluindo sua criação ('svg_init'), a e o seu fechamento ('fecha_svg');
+ * incluindo sua criação ('svg_init'), a e o seu fechamento ('svg_close');
  *
  * Abstração da Sintaxe SVG: Esconder a complexidade da sintaxe SVG,
  * permitindo que o resto do programa desenhe formas simplesmente
@@ -40,11 +38,11 @@ void svg_quadra_insert(FILE *svg, const quadra_t *q);
 /// @param x Coordenada x para inserir linha
 /// @param y Coordenada y para inserir linha
 /// @param id Identificador do registrador
-void pos_endereco(FILE *svg, double x, double y, char *id);
+void svg_posicao_endereco(FILE *svg, double x, double y, char *id);
 
 /// @brief Insere a tag de fechamento `</svg>` e encerra o fluxo do arquivo com segurança.
 /// @param svg Ponteiro para o arquivo SVG a ser fechado.
-void fecha_svg(FILE *svg);
+void svg_close(FILE *svg);
 
 /// @brief Insere um retângulo com opacidade 0.5 no (.svg)
 /// @param svg Ponteiro para o arquivo (.svg)
@@ -53,15 +51,22 @@ void fecha_svg(FILE *svg);
 /// @param min_y Menor Y da bounding box
 /// @param max_x Maior X da bounding box
 /// @param max_y Maior Y da bounding box
-void rect_componente_conexo(FILE *svg, char *cor, double min_x, double min_y, double max_x, double max_y);
+void svg_rect_componente_conexo(FILE *svg, char *cor, double min_x, double min_y, double max_x, double max_y);
 
 /// @brief Desenha uma linha vermelha o (.svg), indicando a MST
 /// @param svg Ponteiro para o arquivo (.svg)
 /// @param id_origem Identificador do vértice de origem
 /// @param id_destino Identificador do vértice de destino
 /// @param g Ponteiro para o grafo
-void linha_vermelha_exp(FILE *svg, const char *id_origem, const char *id_destino, graph_t *g);
+/// @param cor Cor aplicada a linha que será criada
+void svg_linha_caminho(FILE *svg, const char *id_origem, const char *id_destino, graph_t *g, const char *cor);
 
+/// @brief Desenha placa de início de fim do caminho dado pelo comando "p?"
+/// @param svg Ponteiro para o arquivo (.svg)
+/// @param id_src Identificador do vértice de origem
+/// @param id_dst Identificador do vértice de destino
+/// @param g Ponteiro para o grafo
+void svg_desenha_placas(FILE *svg, const char *id_src, const char *id_dst, graph_t *g);
 
 
 #endif //PROJETO_02_EDII_SVG_HANDLER_H

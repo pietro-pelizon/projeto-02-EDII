@@ -1,6 +1,7 @@
 #ifndef PROJETO_02_EDII_UTILS_H
 #define PROJETO_02_EDII_UTILS_H
 #include "exhash.h"
+#include "grafo.h"
 
 /*
  * @file utils.h
@@ -14,7 +15,7 @@ char *my_strdup(const char *src);
 
 /// @brief Gera uma cor aleatória e salva em "buffer"
 /// @param buffer Variável aonde a cor aleatória será gravada
-void cor_aleatoria(char *buffer);
+void gera_cor_aleatoria(char *buffer);
 
 /* ___________________________________________________________________ */
 

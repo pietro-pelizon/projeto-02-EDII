@@ -48,8 +48,8 @@ void pq_change_priority(pqueue_t *pq, const char *id, double new_priority);
 
 /// @brief Insere um novo vértice na fila com sua respectiva prioridade (distância)
 /// @param pq Ponteiro para a fila
-/// @param id CEP/ID da quadra
-/// @param priority Distância até a quadra (menor valor = maior prioridade)
+/// @param id Identificador do nó
+/// @param priority Distância do nó até vértice de origem (alg. de Dijkstra)
 void pq_enqueue(pqueue_t *pq, const char *id, double priority);
 
 /// @brief Remove e retorna o ID do vértice com a MENOR prioridade (menor distância)
