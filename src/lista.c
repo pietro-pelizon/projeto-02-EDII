@@ -544,7 +544,7 @@ void *list_find_min(list_t *l, int (*compare)(void *a, void *b)) {
     return min;
 }
 
-int contains(list_t *l, void *key, int (*compare)(void *a, void *b)) {
+int list_contains(list_t *l, void *key, int (*compare)(void *a, void *b)) {
     if (list_search(l, key, compare) != NULL) {
         return true;
     }
