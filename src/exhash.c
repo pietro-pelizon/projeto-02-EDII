@@ -174,17 +174,17 @@ void exhash_foreach(const exhash_t *map, void (*action)(void *data, void *contex
     free(visited);
 }
 
-void exhash_destroy(exhash_t *map) {
+void exhash_destroy(exhash_t *map, void (*free_data)(void *data)) {
     if (map == NULL) return;
-
     uint64_t size = dir_size(map);
     bucket_t **visited = calloc(size, sizeof(bucket_t *));
     uint64_t n_visited = 0;
 
     for (uint64_t i = 0; i < size; i++) {
         bucket_t *b = map -> directory[i];
-        bool already = false;
+        if (b == NULL) continue;
 
+        bool already = false;
         for (uint64_t v = 0; v < n_visited; v++) {
             if (visited[v] == b) {
                 already = true;
@@ -193,13 +193,20 @@ void exhash_destroy(exhash_t *map) {
         }
 
         if (!already) {
+            if (free_data != NULL) {
+                uint64_t sz = slot_size(map);
+                for (uint16_t j = 0; j < b->record_count; j++) {
+                    void *record = b->data + j * sz + sizeof(uint64_t);
+                    free_data(record);
+                }
+            }
             visited[n_visited++] = b;
             free_bucket(b);
         }
     }
 
     free(visited);
-    free(map -> directory);
+    free(map->directory);
     free(map);
 }
 
