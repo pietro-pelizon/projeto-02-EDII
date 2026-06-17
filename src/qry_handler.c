@@ -130,7 +130,13 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, list_t *registrador
     // Procurando a quadra para fazer os cálculos
     // a partir de seu ponto de ancoragem
     quadra_t *quadra_procurada = NULL;
-    exhash_search(quadras, cep, &quadra_procurada);
+    bool found = exhash_search(quadras, cep, &quadra_procurada);
+
+    if (!found) {
+        fprintf(stderr, "ERRO: Quadra de CEP %s não encontrada no parser do comando '@o?'\n", cep);
+        return;
+    }
+
 
     double x = 0, y = 0;
 
