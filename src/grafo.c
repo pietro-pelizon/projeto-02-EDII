@@ -20,8 +20,7 @@
 // ======= DECLARAÇÕES STATIC ========
 
 static void remove_neighbors_edges(void *record_data, void *context);
-static void edge_destroy_internal(void *edge_data);
-static void vertex_destroy_internal(void *record_data, void *context);
+static void graph_destroy_internal(void *record_data, void *context);
 
 
 // Struct para transportar o ID alvo e a função de free do grafo
@@ -210,8 +209,9 @@ bool graph_remove_edge(graph_t *g, const char *src_id, const char *target_id) {
 
     if (g -> destructor_edge_data && e -> data) {
         g -> destructor_edge_data(e -> data);
-        free(e);
     }
+
+    free(e);
 
     return true;
 }
@@ -260,7 +260,7 @@ void graph_destroy(graph_t *g) {
     assert (g != NULL);
 
     // Itera e destrói todos os vértices e suas respectivas listas de adjacência
-    exhash_foreach(g -> vertices, vertex_destroy_internal, g);
+    exhash_foreach(g -> vertices, graph_destroy_internal, g);
 
     // Destrói a estrutura raiz do Hash Map (Diretório e Baldes)
     exhash_destroy(g -> vertices, NULL);
@@ -330,20 +330,7 @@ void *edge_get_data(edge_t *e) {
 
 // ======= IMPLEMENTAÇÕES STATIC ========
 
-
-static void edge_destroy_internal(void *edge_data) {
-    edge_t *e = edge_data;
-
-    if (e -> target_id) {
-        free(e -> target_id);
-    }
-
-    free(e -> id);
-
-    free(e);
-}
-
-static void vertex_destroy_internal(void *record_data, void *context) {
+static void graph_destroy_internal(void *record_data, void *context) {
     vertex_t *v = *(vertex_t **)record_data;
     graph_t *g = (graph_t *)context;
 
