@@ -49,7 +49,7 @@ static void comando_v(char *linha_lida, graph_t *g) {
 
     int lidos = sscanf(linha_lida, "v %63s %lf %lf", id, &x, &y);
     if (lidos != 3) {
-        fprintf(stderr, "ERRO: Linha mal formatada no arquivo (.via) - comando: 'v'\n");
+        fprintf(stderr, "Linha mal formatada no arquivo (.via) - comando: 'v'. (via_handler.c:%d)\n", __LINE__);
         return;
     }
 
@@ -71,7 +71,7 @@ static void comando_e(char *linha_lida, graph_t *g) {
     // %[^\r\n] captura tudo (incluindo espaços) até a quebra de linha
     int lidos = sscanf(linha_lida, "e %63s %63s %63s %63s %lf %lf %127[^\r\n]", src_id, target_id, cep_dir, cep_esq, &cmp, &vm, nome);
     if (lidos != 7) {
-        fprintf(stderr, "ERRO: Linha mal formatada no arquivo (.via) - comando: 'e'\n");
+        fprintf(stderr, "Linha mal formatada no arquivo (.via) - comando: 'e'. (via_hander.c:%d)\n", __LINE__);
         return;
     }
 
