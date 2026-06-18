@@ -78,7 +78,7 @@ bool graph_add_vertex(graph_t *g, void *data, const char *id) {
     // Checa se vértice com determinado ID já existe.
     // Caso exista, a função retorna false
     if (exhash_search(g -> vertices, id, NULL)) {
-        fprintf(stderr, "Vértice já existente no grafo.");
+        fprintf(stderr, "Vértice já existente no grafo. (grafo.c:%d)", __LINE__);
         return false;
     }
 
@@ -171,7 +171,7 @@ vertex_t *graph_get_vertex(graph_t *g, const char *vertex_id) {
     vertex_t *wanted_vertex = NULL;
 
     if (!exhash_search(g -> vertices, vertex_id, &wanted_vertex)) {
-        fprintf(stderr, "Vértice de ID %s não encontrado.\n", vertex_id);
+        fprintf(stderr, "Vértice de ID %s não encontrado. (grafo.c:%d)\n", vertex_id, __LINE__);
         return NULL;
     }
 
@@ -451,11 +451,18 @@ list_t *dijkstra(graph_t *g, bool flag_tempo, char *id_src,  char *id_dst) {
             // é menor do que o menor custo conhecido até agora?
 
             if (novo_custo < custo_vizinho) {
-                exhash_remove(custos, id_vizinho);
+                free(exhash_remove(custos, id_vizinho));
                 exhash_insert(custos, &novo_custo, id_vizinho);
 
+                // Remove a string antiga do pais e libera ela
+                void *old = exhash_remove(pais, id_vizinho);
+                if (old != NULL) {
+                    char *old_str = *(char **)old;
+                    free(old_str);
+                    free(old);
+                }
+
                 char *copia_id_esquina = my_strdup(id_esquina);
-                exhash_remove(pais, id_vizinho);
                 exhash_insert(pais, &copia_id_esquina, id_vizinho);
                 pq_enqueue(min_heap, id_vizinho, novo_custo);
             }
