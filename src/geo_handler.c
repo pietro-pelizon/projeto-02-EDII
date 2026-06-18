@@ -15,7 +15,7 @@ static void comando_q(const char *linha_lida, char *stroke_width_atual,
 exhash_t *geo_handler(const char *caminho_geo) {
     FILE *arquivo_geo = fopen(caminho_geo, "r");
     if (!arquivo_geo) {
-        printf("Erro ao abrir %s\n", caminho_geo);
+        printf("Erro ao abrir %s\n. (geo_handler.c:%d)", caminho_geo, __LINE__);
         return NULL;
     }
 
@@ -50,7 +50,7 @@ exhash_t *geo_handler(const char *caminho_geo) {
 static void comando_cq(const char *linha_lida, char *stroke_width_atual, char *cor_preenchimento_atual, char *cor_borda_atual) {
     int lidos = sscanf(linha_lida, "%*s %11s %19s %19s", stroke_width_atual, cor_preenchimento_atual, cor_borda_atual);
     if (lidos != 3) {
-        fprintf(stderr, "ERRO: Linha mal formatada no arquivo (.geo) - comando 'cq'\n");
+        fprintf(stderr, "Linha mal formatada no arquivo (.geo) - comando 'cq'. (geo_handler.c:%d)\n", __LINE__);
         return;
     }
 }
@@ -63,7 +63,7 @@ static void comando_q(const char *linha_lida,  char *stroke_width_atual,
 
     int lidos = sscanf(linha_lida, "%*s %15s %lf %lf %lf %lf", cep_quadra, &x_quadra, &y_quadra, &width_quadra, &height_quadra);
     if (lidos != 5) {
-        fprintf(stderr, "ERRO: Linha mal formatada no arquivo (.geo) - comando 'q'\n");
+        fprintf(stderr, "ERRO: Linha mal formatada no arquivo (.geo) - comando 'q. (geo_handler.c:%d)'\n", __LINE__);
         return;
     }
     

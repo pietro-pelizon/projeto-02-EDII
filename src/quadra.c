@@ -181,6 +181,6 @@ void quadra_get_coord(char face, double *x, double *y, quadra_t *q, double numer
             *y = y_quadra + numero;
             break;
         }
-        default: printf("Face %c inválida!\n", face);
+        default: fprintf(stderr, "Face %c inválida! (quadra.c:%d)\n", face, __LINE__);
     }
 }

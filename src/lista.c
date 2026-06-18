@@ -20,7 +20,7 @@ typedef struct stLista {
 list_t *list_init() {
     list_t *l = malloc (sizeof(list_t));
     if (l == NULL) {
-        printf("LISTA: Erro ao alocar memoria para a lista!\n");
+        printf("Erro ao alocar memória para a lista! (lista.c:%d)\n", __LINE__);
         return NULL;
     }
 
@@ -46,7 +46,7 @@ bool list_is_empty(list_t *l) {
 void list_push_front(list_t *l, void *new_data) {
     list_node_t *new = malloc (sizeof(list_node_t));
     if (new == NULL) {
-        printf("LISTA: Erro ao alocar memoria para o novo node da lista!\n");
+        printf("Erro ao alocar memória para o novo nó da lista! (lista.c:%d)\n", __LINE__);
         return;
     }
 
@@ -68,7 +68,7 @@ void list_push_front(list_t *l, void *new_data) {
 void list_push_back(list_t *l, void *new_data) {
     list_node_t *new = malloc (sizeof(list_node_t));
     if (new == NULL) {
-        printf("LISTA: Erro ao alocar memoria para o novo node\n");
+        printf("Erro ao alocar memória para o novo nó. (lista.c:%d)\n", __LINE__);
         return;
     }
 
@@ -108,7 +108,7 @@ void list_insert_at(list_t *l, void *new_data, int index) {
 
     list_node_t *new = malloc (sizeof(list_node_t));
     if (new == NULL) {
-        printf("LISTA: Erro ao alocar memoria o novo no da lista!\n");
+        printf("Erro ao alocar memória o novo nó da lista! (lista.c:%d)\n", __LINE__);
         return;
     }
     new -> data = new_data;
@@ -135,7 +135,7 @@ void *list_pop_front(list_t *l) {
     }
 
     if (l -> head == NULL) {
-        printf("LISTA: Nada a remover, a lista ja esta vazia!\n");
+        printf("Nada a remover, a lista já está vazia! (lista.c:%d)\n", __LINE__);
         return NULL;
     }
 
@@ -166,7 +166,7 @@ void *list_pop_back(list_t *l) {
     }
 
     if (list_is_empty(l)) {
-        printf("LISTA: Nada a remover, a lista ja esta vazia!\n");
+        printf("Nada a remover, a lista já está vazia! (lista.c:%d)\n", __LINE__);
         return NULL;
     }
 
@@ -289,7 +289,7 @@ list_node_t *list_node_at(list_t *l, int index) {
     }
 
     if (index < 0 || index > l -> tam - 1) {
-        printf("LISTA: Index inválido!\n");
+        printf("Index inválido! (lista.c:%d)\n", __LINE__);
         return NULL;
     }
 
@@ -315,7 +315,7 @@ void *list_data_at(list_t *l, int index) {
     }
 
     if (index < 0 || index > l -> tam - 1) {
-        printf("Index inválido!\n");
+        printf("Index inválido! (lista.c:%d)\n", __LINE__);
         return NULL;
     }
 
@@ -375,7 +375,7 @@ void *list_remove_first(list_t *l, void *key, int (*compare)(void *a, void *b)) 
     }
 
     if (l -> tam == 0) {
-        printf("LISTA: A lista está vazia! Nada a remover!\n");
+        printf("A lista está vazia! Nada a remover! (lista.c:%d)\n", __LINE__);
         return NULL;
     }
 
@@ -390,7 +390,7 @@ void *list_remove_first(list_t *l, void *key, int (*compare)(void *a, void *b)) 
         index++;
     }
 
-    printf("LISTA: Elemento não encontrado na lista\n");
+    printf("Elemento não encontrado na lista. (lista.c:%d)\n", __LINE__);
     return NULL;
 }
 
@@ -429,7 +429,7 @@ void *list_search(list_t *l, void *key, int (*compare)(void *a, void *b)) {
 
 void list_print(list_t *l, void (*print_data)(void *data)) {
     if (l == NULL) {
-        printf("LISTA: Ponteiro nulo passado para a funcao 'list_print'\n");
+        printf("Ponteiro nulo passado para a funcao 'list_print'. (lista.c:%d)\n", __LINE__);
         return;
     }
 
