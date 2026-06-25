@@ -15,7 +15,7 @@ static void destrutor_v(void *data) { free(data); }
 static void destrutor_e(void *data) { free(data); }
 
 static graph_t *novo_grafo(void) {
-    return graph_init(NULL, destrutor_e, destrutor_v);
+    return graph_init(destrutor_e, destrutor_v);
 }
 
 static dado_v_t *payload_v(int valor) {
@@ -202,7 +202,7 @@ void get_neighbors_retorna_lista_com_vizinhos(void) {
     graph_add_edge(g, payload_e(1.0), "v1", "v2", "Rua_A");
     graph_add_edge(g, payload_e(2.0), "v1", "v3", "Rua_B");
 
-    lista_t *viz = graph_get_neighbors(g, "v1");
+    list_t *viz = graph_get_neighbors(g, "v1");
     TEST_ASSERT_NOT_NULL(viz);
 
     graph_destroy(g);
@@ -214,9 +214,9 @@ void get_neighbors_vertice_sem_arestas_retorna_lista_vazia(void) {
 
     graph_add_vertex(g, payload_v(1), "v1");
 
-    lista_t *viz = graph_get_neighbors(g, "v1");
+    list_t *viz = graph_get_neighbors(g, "v1");
     TEST_ASSERT_NOT_NULL(viz);
-    TEST_ASSERT_TRUE(is_empty_lista(viz));
+    TEST_ASSERT_TRUE(list_is_empty(viz));
 
     graph_destroy(g);
 }
@@ -225,7 +225,7 @@ void get_neighbors_vertice_sem_arestas_retorna_lista_vazia(void) {
 void get_neighbors_vertice_inexistente_retorna_null(void) {
     graph_t *g = novo_grafo();
 
-    lista_t *viz = graph_get_neighbors(g, "fantasma");
+    list_t *viz = graph_get_neighbors(g, "fantasma");
     TEST_ASSERT_NULL(viz);
 
     graph_destroy(g);
@@ -338,7 +338,7 @@ void get_exhash_retorna_nao_null(void) {
 }
 
 // Conta quantos vértices o foreach visita
-static void conta_vertices(const char *id, void *data, lista_t *adj, void *ctx) {
+static void conta_vertices(const char *id, void *data, list_t *adj, void *ctx) {
     (void)id; (void)data; (void)adj;
     int *contador = ctx;
     (*contador)++;
