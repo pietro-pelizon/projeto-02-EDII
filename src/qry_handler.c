@@ -84,6 +84,7 @@ static int compara_registradores(void *a, void *b);
 static void registrador_destroy(void *reg);
 static void checa_vertice_mais_proximo(const char *id, void *vertex_data, list_t *adj, void *context);
 static char *achar_vertice_mais_proximo(graph_t *g, double x, double y);
+static double calcula_tempo_caminho(list_t *caminho, graph_t *g);
 
 /*------------------------------------------------------------------------------------------*/
 /* ----- Função principal do módulo ----- */
@@ -316,8 +317,24 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_
         fprintf(stderr, "Registrador de destino não encontrado! (qry_handler.c:%d)\n", __LINE__);
         return;
     }
-    list_t *caminho_rapido = dijkstra(g, true, src -> id_mais_proximo, dst -> id_mais_proximo);
-    list_t *caminho_curto = dijkstra(g, false, src -> id_mais_proximo, dst -> id_mais_proximo);
+
+    double custo_curto = 0.0, custo_rapido = 0.0;
+    list_t *caminho_rapido = dijkstra(g, true, src -> id_mais_proximo, dst -> id_mais_proximo, &custo_rapido);
+    list_t *caminho_curto = dijkstra(g, false, src -> id_mais_proximo, dst -> id_mais_proximo, &custo_curto);
+
+    double tempo_curto  = calcula_tempo_caminho(caminho_curto,  g);
+    double tempo_rapido = calcula_tempo_caminho(caminho_rapido, g);
+
+    // Ancora o mais rápido em 6s, escala o mais lento proporcionalmente
+    double duracao_rapido, duracao_curto;
+    if (tempo_rapido <= tempo_curto) {
+        duracao_rapido = 6.0;
+        duracao_curto  = 6.0 * (tempo_curto / tempo_rapido);
+    } else {
+        duracao_curto  = 6.0;
+        duracao_rapido = 6.0 * (tempo_rapido / tempo_curto);
+    }
+
 
     fprintf(txt, "[*] p? %s %s %s %s\n", id_src, id_dst, cor_curto, cor_rapido);
 
@@ -336,8 +353,8 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_
         snprintf(id_curto,  sizeof(id_curto),  "path_curto_%d",  p_contador);
         snprintf(id_rapido, sizeof(id_rapido), "path_rapido_%d", p_contador);
 
-        svg_anima_caminho(svg, caminho_curto,  g, id_curto, 6);
-        svg_anima_caminho(svg, caminho_rapido, g, id_rapido, 5);
+        svg_anima_caminho(svg, caminho_curto,  g, id_curto, duracao_curto);
+        svg_anima_caminho(svg, caminho_rapido, g, id_rapido, duracao_rapido);
         svg_desenha_placas(svg, src -> id_mais_proximo, dst -> id_mais_proximo, g);
         }
 
@@ -572,4 +589,24 @@ static char *achar_vertice_mais_proximo(graph_t *g, double x, double y) {
     mais_proximo_ctx_t ctx = { x, y, INFINITY, NULL };
     graph_foreach_vertex(g, checa_vertice_mais_proximo, &ctx);
     return ctx.id_mais_proximo;  // aponta para o id interno do grafo — não liberar
+}
+
+static double calcula_tempo_caminho(list_t *caminho, graph_t *g) {
+    double total = 0.0;
+    list_node_t *no = list_node_front(caminho);
+
+    while (no != NULL && list_node_next(no) != NULL) {
+        const char *id1 = list_node_data(no);
+        const char *id2 = list_node_data(list_node_next(no));
+
+        edge_t *aresta = graph_get_edge(g, id1, id2);
+        if (aresta != NULL) {
+            rua_t *rua = edge_get_data(aresta);
+            total += rua_get_comprimento(rua) / rua_get_velocidade_media(rua);
+        }
+
+        no = list_node_next(no);
+    }
+
+    return total;
 }
