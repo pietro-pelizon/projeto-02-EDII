@@ -380,7 +380,7 @@ static void libera_pais(exhash_t *pais) {
     exhash_destroy(pais, NULL);
 }
 
-list_t *dijkstra(graph_t *g, bool flag_tempo, char *id_src,  char *id_dst) {
+list_t *dijkstra(graph_t *g, bool flag_tempo, char *id_src, char *id_dst, double *custo_out) {
     assert(g != NULL);
 
     // Inicializando as estruturas necessárias para o algoritmo
@@ -451,10 +451,12 @@ list_t *dijkstra(graph_t *g, bool flag_tempo, char *id_src,  char *id_dst) {
             // é menor do que o menor custo conhecido até agora?
 
             if (novo_custo < custo_vizinho) {
-                free(exhash_remove(custos, id_vizinho));
-                exhash_insert(custos, &novo_custo, id_vizinho);
-
-                // Remove a string antiga do pais e libera ela
+                if (found_vizinho)
+                    exhash_update(custos, id_vizinho, &novo_custo);
+                else {
+                    exhash_insert(custos, &novo_custo, id_vizinho);
+                }
+                
                 void *old = exhash_remove(pais, id_vizinho);
                 if (old != NULL) {
                     char *old_str = *(char **)old;
@@ -493,6 +495,10 @@ list_t *dijkstra(graph_t *g, bool flag_tempo, char *id_src,  char *id_dst) {
         if (!exhash_search(pais, atual, &prox)) break;
         atual = prox;
     }
+
+    double custo_final = 0.0;
+    exhash_search(custos, id_dst, &custo_final);
+    if (custo_out != NULL) *custo_out = custo_final;
 
     pq_destroy(min_heap);
     exhash_destroy(custos, NULL);
