@@ -36,7 +36,7 @@ typedef struct stContextoRegs {
 
 typedef struct stRegistrador {
     char *id;
-    ponto_t *p;
+    char *id_mais_proximo;
 } registrador_t;
 
 // Empacotando tudo que o graph_foreach
@@ -62,7 +62,13 @@ typedef struct stContextoExp {
     int index;
 } exp_ctx_t;
 
-static void comando_ao(char *linha_atual, exhash_t *quadras, list_t *registradores, FILE *svg, FILE *txt);
+typedef struct stContextoMaisProximo {
+    double x, y;
+    double menor_dist;
+    char *id_mais_proximo;
+} mais_proximo_ctx_t;
+
+static void comando_ao(char *linha_atual, graph_t *g, exhash_t *quadras, list_t *registradores, FILE *svg, FILE *txt);
 static void comando_mvm(char *linha_atual, graph_t *g);
 static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg);
 static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt);
@@ -76,7 +82,8 @@ static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex
 static void extrai_arestas(const char *id_origem, void *vertex_data, list_t *adjacent, void *context);
 static int compara_registradores(void *a, void *b);
 static void registrador_destroy(void *reg);
-
+static void checa_vertice_mais_proximo(const char *id, void *vertex_data, list_t *adj, void *context);
+static char *achar_vertice_mais_proximo(graph_t *g, double x, double y);
 
 /*------------------------------------------------------------------------------------------*/
 /* ----- Função principal do módulo ----- */
@@ -98,7 +105,7 @@ void qry_handler(char *path_qry, graph_t *g, exhash_t *quadras, FILE *svg, FILE 
         sscanf(linha, "%4s", comando);
 
         if (strcmp(comando, "@o?") == 0) {
-            comando_ao(linha, quadras, registradores, svg, txt);
+            comando_ao(linha, g, quadras, registradores, svg, txt);
         } else if (strcmp(comando, "mvm") == 0) {
             comando_mvm(linha, g);
         } else if (strcmp(comando, "regs") == 0) {
@@ -111,21 +118,23 @@ void qry_handler(char *path_qry, graph_t *g, exhash_t *quadras, FILE *svg, FILE 
     }
 
     list_free(registradores, registrador_destroy);
+    fclose(arquivo_qry);
 }
 
 /*------------------------------------------------------------------------------------------*/
 /* ----- Implementação das funções que fazem parsing dos comandos ----- */
 /*------------------------------------------------------------------------------------------*/
 
-static void comando_ao(char *linha_atual, exhash_t *quadras, list_t *registradores, FILE *svg, FILE *txt) {
+static void comando_ao(char *linha_atual, graph_t *g, exhash_t *quadras, list_t *registradores, FILE *svg, FILE *txt) {
     char id_reg[64], cep[64], face;
     double numero;
 
     int lidos = sscanf(linha_atual, "@o? %63s %63s %c %lf", id_reg, cep, &face, &numero);
     if (lidos != 4) {
-        fprintf(stderr, "ERRO: linha mal formatada no arquivo (.qry) - comando: '@a?'\n");
+        fprintf(stderr, "Linha mal formatada no arquivo (.qry) - comando: '@o?'. (qry_handler.c:%d)\n", __LINE__);
         return;
     }
+
 
     // Procurando a quadra para fazer os cálculos
     // a partir de seu ponto de ancoragem
@@ -133,7 +142,7 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, list_t *registrador
     bool found = exhash_search(quadras, cep, &quadra_procurada);
 
     if (!found) {
-        fprintf(stderr, "ERRO: Quadra de CEP %s não encontrada no parser do comando '@o?'\n", cep);
+        fprintf(stderr, "Quadra de CEP %s não encontrada no parser do comando '@o?'. (qry_handler.c:%d)\n", cep, __LINE__);
         return;
     }
 
@@ -144,12 +153,13 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, list_t *registrador
     quadra_get_coord(face, &x, &y, quadra_procurada, numero);
 
     registrador_t *reg = list_search(registradores, id_reg, compara_registradores);
+    char *id_vertice_mais_proximo = achar_vertice_mais_proximo(g, x, y);
 
     // Se registrador já existe, só atualiza coordenadas
     if (reg != NULL) {
-        ponto_set_x(reg -> p, x);
-        ponto_set_y(reg -> p, y);
-        fprintf(stderr, "Registrador já existe na lista, coordenadas atualizadas.\n");
+        free(reg -> id_mais_proximo);
+        reg -> id_mais_proximo = my_strdup(id_vertice_mais_proximo);
+        fprintf(stderr, "Registrador já existe na lista, coordenadas atualizadas. (qry_handler.c:%d)\n", __LINE__);
     }
 
     else {
@@ -157,14 +167,14 @@ static void comando_ao(char *linha_atual, exhash_t *quadras, list_t *registrador
         registrador_t *novo_reg = malloc(sizeof(registrador_t));
         assert(novo_reg);
         novo_reg -> id = my_strdup(id_reg);
-        novo_reg -> p = ponto_init(x, y);
+        novo_reg -> id_mais_proximo = my_strdup(id_vertice_mais_proximo);
         list_push_front(registradores, novo_reg);
 
     }
 
     // Escrevendo info no (.txt)
-    fprintf(txt, "[*] @o? %15s %31s %c %lf\n", id_reg, cep, face, numero);
-    fprintf(txt, "Ponto do endereço: (%.2lf, %.2lf)\n", x, y);
+    fprintf(txt, "[*] @o? %s %s %c %lf\n", id_reg, cep, face, numero);
+    fprintf(txt, "Ponto do endereço: (%.2lf, %.2lf)\n\n", x, y);
 
 
     // Colocando informações visuais no (.svg)
@@ -177,7 +187,7 @@ static void comando_mvm(char *linha_atual, graph_t *g) {
     // Coleta os dados da linha atual
     int lidos = sscanf(linha_atual, "mvm %lf %lf %lf %lf %lf", &nova_vm, &x, &y, &w, &h);
     if (lidos != 5) {
-        fprintf(stderr, "ERRO: linha mal formatada no arquivo (.qry) - comando: 'mvm'\n");
+        fprintf(stderr, "Linha mal formatada no arquivo (.qry) - comando: 'mvm'. (qry_handler.c:%d)\n", __LINE__);
         return;
     }
 
@@ -195,7 +205,7 @@ static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg) {
     // Coleta os dados da linha atual
     int lidos = sscanf(linha_atual, "regs %lf", &vm_ignorada);
     if (lidos != 1) {
-        fprintf(stderr, "ERRO: linha mal formatada no comando 'regs'\n");
+        fprintf(stderr, "Linha mal formatada no comando 'regs'. (qry_handler.c:%d)\n", __LINE__);
         return;
     }
 
@@ -224,7 +234,7 @@ static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
     // Lendo a linha e pegando info
     int lidos = sscanf(linha_atual, "exp %lf", &vl);
     if (lidos != 1) {
-        fprintf(stderr, "ERRO: linha mal formatada no arquivo (.qry) - comando: 'exp'\n");
+        fprintf(stderr, "Linha mal formatada no arquivo (.qry) - comando: 'exp'. (qry_handler.c:%d)\n", __LINE__);
         return;
     }
 
@@ -291,23 +301,23 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_
 
     int lidos = sscanf(linha_atual, "p? %63s %63s %63s %63s", id_src, id_dst, cor_curto, cor_rapido);
     if (lidos != 4) {
-        fprintf(stderr, "ERRO: linha mal formatada no arquivo (.qry) - comando: 'p?'\n");
+        fprintf(stderr, "Linha mal formatada no arquivo (.qry) - comando: 'p?'. (qry_handler.c:%d)\n", __LINE__);
         return;
     }
 
     registrador_t *src = list_search(registradores, id_src, compara_registradores);
     if (!src) {
-        fprintf(stderr, "Registrador de origem não encontrado!\n");
+        fprintf(stderr, "Registrador de origem não encontrado! (qry_handler.c:%d)\n", __LINE__);
         return;
     }
     
     registrador_t *dst = list_search(registradores, id_dst, compara_registradores);
     if (!dst) {
-        fprintf(stderr, "Registrador de destino não encontrado!\n");
+        fprintf(stderr, "Registrador de destino não encontrado! (qry_handler.c:%d)\n", __LINE__);
         return;
     }
-    list_t *caminho_rapido = dijkstra(g, true, src -> id, dst -> id);
-    list_t *caminho_curto = dijkstra(g, false, src -> id, dst -> id);
+    list_t *caminho_rapido = dijkstra(g, true, src -> id_mais_proximo, dst -> id_mais_proximo);
+    list_t *caminho_curto = dijkstra(g, false, src -> id_mais_proximo, dst -> id_mais_proximo);
 
     fprintf(txt, "[*] p? %s %s %s %s\n", id_src, id_dst, cor_curto, cor_rapido);
 
@@ -316,10 +326,20 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_
     }
 
     else {
-        desenha_caminho(svg, caminho_rapido, cor_rapido, g);
         desenha_caminho(svg, caminho_curto, cor_curto, g);
-        svg_desenha_placas(svg, id_src, id_dst, g);
-    }
+        desenha_caminho(svg, caminho_rapido, cor_rapido, g);
+
+        static int p_contador = 0;
+        p_contador++;
+
+        char id_curto[32], id_rapido[32];
+        snprintf(id_curto,  sizeof(id_curto),  "path_curto_%d",  p_contador);
+        snprintf(id_rapido, sizeof(id_rapido), "path_rapido_%d", p_contador);
+
+        svg_anima_caminho(svg, caminho_curto,  g, id_curto, 6);
+        svg_anima_caminho(svg, caminho_rapido, g, id_rapido, 5);
+        svg_desenha_placas(svg, src -> id_mais_proximo, dst -> id_mais_proximo, g);
+        }
 
 
     list_free(caminho_rapido, free);
@@ -399,8 +419,8 @@ static void descobre_componente_conexo(const char *id_start, void *v_data, list_
     }
 
 
-    list_free(bfs_fila, free);
 
+    list_free(bfs_fila, NULL);
     char cor[10];
     gera_cor_aleatoria(cor);
 
@@ -528,8 +548,28 @@ static void registrador_destroy(void *reg) {
     registrador_t *r = reg;
 
     free(r -> id);
-    ponto_destroy(r -> p);
+    free(r -> id_mais_proximo);
 
     free(r);
 }
 
+static void checa_vertice_mais_proximo(const char *id, void *vertex_data, list_t *adj, void *context) {
+    (void)adj;
+    mais_proximo_ctx_t *ctx = context;
+    ponto_t *p = vertex_data;
+
+    double dx = ponto_get_x(p) - ctx -> x;
+    double dy = ponto_get_y(p) - ctx -> y;
+    double dist = dx * dx + dy * dy; // sem sqrt, só para comparação
+
+    if (dist < ctx -> menor_dist) {
+        ctx -> menor_dist = dist;
+        ctx -> id_mais_proximo = (char *)id;
+    }
+}
+
+static char *achar_vertice_mais_proximo(graph_t *g, double x, double y) {
+    mais_proximo_ctx_t ctx = { x, y, INFINITY, NULL };
+    graph_foreach_vertex(g, checa_vertice_mais_proximo, &ctx);
+    return ctx.id_mais_proximo;  // aponta para o id interno do grafo — não liberar
+}
