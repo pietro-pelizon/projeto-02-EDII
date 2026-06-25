@@ -26,7 +26,7 @@ void arquivo_vazio_retorna_exhash_valido(void) {
     escreve_geo("");
     exhash_t *h = geo_handler(GEO_TMP);
     TEST_ASSERT_NOT_NULL(h);
-    exhash_destroy(h);
+    exhash_destroy(h, NULL);
 }
 
 void comando_q_insere_quadra(void) {
@@ -39,7 +39,7 @@ void comando_q_insere_quadra(void) {
     TEST_ASSERT_TRUE(exhash_search(h, "cep01", &q));
     TEST_ASSERT_NOT_NULL(q);
 
-    exhash_destroy(h);
+    exhash_destroy(h, NULL);
 }
 
 void comando_q_preserva_dados_espaciais(void) {
@@ -55,7 +55,7 @@ void comando_q_preserva_dados_espaciais(void) {
     TEST_ASSERT_DOUBLE_WITHIN(1e-6, 100.0, quadra_get_width(q));
     TEST_ASSERT_DOUBLE_WITHIN(1e-6, 50.0,  quadra_get_height(q));
 
-    exhash_destroy(h);
+    exhash_destroy(h, NULL);
 }
 
 void cores_padrao_aplicadas_sem_cq(void) {
@@ -69,7 +69,7 @@ void cores_padrao_aplicadas_sem_cq(void) {
     TEST_ASSERT_EQUAL_STRING("black", quadra_get_cor_borda(q));
     TEST_ASSERT_EQUAL_STRING("1.0px", quadra_get_stroke_width(q));
 
-    exhash_destroy(h);
+    exhash_destroy(h, NULL);
 }
 
 void comando_cq_altera_cores_das_quadras_seguintes(void) {
@@ -92,7 +92,7 @@ void comando_cq_altera_cores_das_quadras_seguintes(void) {
     TEST_ASSERT_EQUAL_STRING("blue", quadra_get_cor_borda(depois));
     TEST_ASSERT_EQUAL_STRING("2px",  quadra_get_stroke_width(depois));
 
-    exhash_destroy(h);
+    exhash_destroy(h, NULL);
 }
 
 void comando_cq_nao_afeta_quadras_anteriores(void) {
@@ -111,7 +111,7 @@ void comando_cq_nao_afeta_quadras_anteriores(void) {
     TEST_ASSERT_EQUAL_STRING("black", quadra_get_cor_borda(q1));
     TEST_ASSERT_EQUAL_STRING("1.0px", quadra_get_stroke_width(q1));
 
-    exhash_destroy(h);
+    exhash_destroy(h, NULL);
 }
 
 void multiplos_cq_usa_o_mais_recente(void) {
@@ -130,7 +130,7 @@ void multiplos_cq_usa_o_mais_recente(void) {
     TEST_ASSERT_EQUAL_STRING("pink", quadra_get_cor_borda(q));
     TEST_ASSERT_EQUAL_STRING("3px",  quadra_get_stroke_width(q));
 
-    exhash_destroy(h);
+    exhash_destroy(h, NULL);
 }
 
 void multiplas_quadras_todas_inseridas(void) {
@@ -151,7 +151,7 @@ void multiplas_quadras_todas_inseridas(void) {
     TEST_ASSERT_DOUBLE_WITHIN(1e-6, 20.0, quadra_get_x(q2));
     TEST_ASSERT_DOUBLE_WITHIN(1e-6, 40.0, quadra_get_x(q3));
 
-    exhash_destroy(h);
+    exhash_destroy(h, NULL);
 }
 
 void linhas_desconhecidas_sao_ignoradas(void) {
@@ -167,7 +167,7 @@ void linhas_desconhecidas_sao_ignoradas(void) {
     quadra_t *q = NULL;
     TEST_ASSERT_TRUE(exhash_search(h, "cep01", &q));
 
-    exhash_destroy(h);
+    exhash_destroy(h, NULL);
 }
 
 
