@@ -57,7 +57,7 @@ void curto_caminho_linear(void) {
     add_e(g, "A", "B", 10.0, 1.0);
     add_e(g, "B", "C", 10.0, 1.0);
 
-    list_t *cam = dijkstra(g, false, "A", "C");
+    list_t *cam = dijkstra(g, false, "A", "C", NULL);
 
     char **ids; int n = extrai_caminho(cam, &ids);
 
@@ -67,7 +67,7 @@ void curto_caminho_linear(void) {
     TEST_ASSERT_EQUAL_STRING("C", ids[2]);
 
     free(ids);
-    list_free(cam, NULL);
+    list_free(cam, free);
     graph_destroy(g);
 }
 
@@ -80,7 +80,7 @@ void curto_escolhe_menor_distancia(void) {
     add_e(g, "A", "C", 20.0, 1.0);
     add_e(g, "C", "D",  5.0, 1.0);
 
-    list_t *cam = dijkstra(g, false, "A", "D");
+    list_t *cam = dijkstra(g, false, "A", "D", NULL);
 
     char **ids; int n = extrai_caminho(cam, &ids);
 
@@ -91,7 +91,7 @@ void curto_escolhe_menor_distancia(void) {
     TEST_ASSERT_EQUAL_STRING("D", ids[2]);
 
     free(ids);
-    list_free(cam, NULL);
+    list_free(cam, free);
     graph_destroy(g);
 }
 
@@ -101,7 +101,7 @@ void curto_origem_igual_destino(void) {
     add_v(g, "A"); add_v(g, "B");
     add_e(g, "A", "B", 10.0, 1.0);
 
-    list_t *cam = dijkstra(g, false, "A", "A");
+    list_t *cam = dijkstra(g, false, "A", "A", NULL);
 
     char **ids; int n = extrai_caminho(cam, &ids);
 
@@ -109,7 +109,7 @@ void curto_origem_igual_destino(void) {
     TEST_ASSERT_EQUAL_STRING("A", ids[0]);
 
     free(ids);
-    list_free(cam, NULL);
+    list_free(cam, free);
     graph_destroy(g);
 }
 
@@ -121,13 +121,13 @@ void curto_destino_inacessivel_retorna_lista_vazia(void) {
 
     // C existe, mas nenhuma aresta leva até lá
 
-    list_t *cam = dijkstra(g, false, "A", "C");
+    list_t *cam = dijkstra(g, false, "A", "C", NULL);
 
     char **ids; int n = extrai_caminho(cam, &ids);
     TEST_ASSERT_EQUAL_INT(0, n);
 
     free(ids);
-    list_free(cam, NULL);
+    list_free(cam, free);
     graph_destroy(g);
 }
 
@@ -139,7 +139,7 @@ void curto_aresta_direta_vence_desvio(void) {
     add_e(g, "A", "B", 10.0, 1.0);
     add_e(g, "B", "C",  1.0, 1.0);   // desvio: 10+1=11
 
-    list_t *cam = dijkstra(g, false, "A", "C");
+    list_t *cam = dijkstra(g, false, "A", "C", NULL);
 
     char **ids; int n = extrai_caminho(cam, &ids);
 
@@ -148,7 +148,7 @@ void curto_aresta_direta_vence_desvio(void) {
     TEST_ASSERT_EQUAL_STRING("C", ids[1]);
 
     free(ids);
-    list_free(cam, NULL);
+    list_free(cam, free);
     graph_destroy(g);
 }
 
@@ -165,7 +165,7 @@ void rapido_menor_tempo_vence(void) {
     add_e(g, "A", "C", 200.0,  1.0);  // tempo = 200
     add_e(g, "C", "B",  50.0,  1.0);  // tempo = 50 → total = 250
 
-    list_t *cam = dijkstra(g, true, "A", "B");
+    list_t *cam = dijkstra(g, true, "A", "B", NULL);
 
     char **ids; int n = extrai_caminho(cam, &ids);
 
@@ -174,7 +174,7 @@ void rapido_menor_tempo_vence(void) {
     TEST_ASSERT_EQUAL_STRING("B", ids[1]);
 
     free(ids);
-    list_free(cam, NULL);
+    list_free(cam, free);
     graph_destroy(g);
 }
 
@@ -192,7 +192,7 @@ void rapido_longo_mas_veloz_vence(void) {
     add_e(g, "A", "C",  100.0,   1.0);  // tempo = 100
     add_e(g, "C", "B",  100.0,   1.0);  // tempo = 100 → total = 200
 
-    list_t *cam = dijkstra(g, true, "A", "B");
+    list_t *cam = dijkstra(g, true, "A", "B", NULL);
 
     char **ids; int n = extrai_caminho(cam, &ids);
 
@@ -201,7 +201,7 @@ void rapido_longo_mas_veloz_vence(void) {
     TEST_ASSERT_EQUAL_STRING("B", ids[1]);
 
     free(ids);
-    list_free(cam, NULL);
+    list_free(cam, free);
     graph_destroy(g);
 }
 
@@ -217,8 +217,8 @@ void curto_e_rapido_diferem(void) {
     add_e(g, "A", "B", 10.0, 10.0);
     add_e(g, "B", "C", 10.0, 10.0);
 
-    list_t *cam_curto  = dijkstra(g, false, "A", "C");
-    list_t *cam_rapido = dijkstra(g, true,  "A", "C");
+    list_t *cam_curto  = dijkstra(g, false, "A", "C", NULL);
+    list_t *cam_rapido = dijkstra(g, true,  "A", "C", NULL);
 
     char **ids_curto;  int n_curto  = extrai_caminho(cam_curto,  &ids_curto);
     char **ids_rapido; int n_rapido = extrai_caminho(cam_rapido, &ids_rapido);
@@ -235,8 +235,8 @@ void curto_e_rapido_diferem(void) {
     TEST_ASSERT_EQUAL_STRING("C", ids_rapido[2]);
 
     free(ids_curto); free(ids_rapido);
-    list_free(cam_curto, NULL);
-    list_free(cam_rapido, NULL);
+    list_free(cam_curto, free);
+    list_free(cam_rapido, free);
     graph_destroy(g);
 }
 
