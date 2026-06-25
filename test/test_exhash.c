@@ -19,7 +19,7 @@ void tearDown(void) {}
 void init_retorna_ponteiro_valido(void) {
     exhash_t *m = exhash_init(sizeof(int), 128);
     TEST_ASSERT_NOT_NULL(m);
-    exhash_destroy(m);
+    exhash_destroy(m, NULL);
 }
 
 void insert_simples(void) {
@@ -28,7 +28,7 @@ void insert_simples(void) {
     registro_t r = {1, 9.99f, "Alice"};
     TEST_ASSERT_TRUE(exhash_insert(map, &r, "alice-001"));
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void insert_chave_duplicada_retorna_false(void) {
@@ -38,7 +38,7 @@ void insert_chave_duplicada_retorna_false(void) {
     TEST_ASSERT_TRUE(exhash_insert(map, &r, "alice-001"));
     TEST_ASSERT_FALSE(exhash_insert(map, &r, "alice-001"));
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void insert_multiplos_registros(void) {
@@ -47,12 +47,12 @@ void insert_multiplos_registros(void) {
     for (int i = 0; i < 20; i++) {
         char key[16];
         snprintf(key, sizeof(key), "key-%03d", i);
-        registro_t r = {i, (float)i * 1.5f};
+        registro_t r = {i, (float)i * 1.5f, ""};
         strncpy(r.nome, key, sizeof(r.nome) - 1);
         TEST_ASSERT_TRUE(exhash_insert(map, &r, key));
     }
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void insert_forcando_split_de_bucket(void) {
@@ -61,12 +61,12 @@ void insert_forcando_split_de_bucket(void) {
     for (int i = 0; i < 100; i++) {
         char key[32];
         snprintf(key, sizeof(key), "stress-key-%d", i);
-        registro_t r = {i, (float)i};
+        registro_t r = {i, (float)i, ""};
         strncpy(r.nome, key, sizeof(r.nome) - 1);
         TEST_ASSERT_TRUE_MESSAGE(exhash_insert(map, &r, key), key);
     }
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void search_encontra_registro_inserido(void) {
@@ -81,7 +81,7 @@ void search_encontra_registro_inserido(void) {
     TEST_ASSERT_EQUAL_FLOAT(3.14f, resultado.valor);
     TEST_ASSERT_EQUAL_STRING("Bob", resultado.nome);
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void search_chave_inexistente_retorna_false(void) {
@@ -90,7 +90,7 @@ void search_chave_inexistente_retorna_false(void) {
     registro_t resultado;
     TEST_ASSERT_FALSE(exhash_search(map, "nao-existe", &resultado));
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void search_apos_multiplas_insercoes(void) {
@@ -99,7 +99,7 @@ void search_apos_multiplas_insercoes(void) {
     for (int i = 0; i < 30; i++) {
         char key[16];
         snprintf(key, sizeof(key), "item-%03d", i);
-        registro_t r = {i, (float)i};
+        registro_t r = {i, (float)i, ""};
         strncpy(r.nome, key, sizeof(r.nome) - 1);
         exhash_insert(map, &r, key);
     }
@@ -113,7 +113,7 @@ void search_apos_multiplas_insercoes(void) {
         TEST_ASSERT_EQUAL_INT(targets[t], resultado.id);
     }
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void search_nao_confunde_chaves_similares(void) {
@@ -131,7 +131,7 @@ void search_nao_confunde_chaves_similares(void) {
     exhash_search(map, "chave-2", &out);
     TEST_ASSERT_EQUAL_INT(2, out.id);
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void remove_retorna_dados_corretos(void) {
@@ -149,7 +149,7 @@ void remove_retorna_dados_corretos(void) {
     TEST_ASSERT_EQUAL_STRING("Carlos", r->nome);
 
     free(removido);
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void remove_chave_inexistente_retorna_null(void) {
@@ -157,7 +157,7 @@ void remove_chave_inexistente_retorna_null(void) {
 
     TEST_ASSERT_NULL(exhash_remove(map, "fantasma"));
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void remove_impede_busca_posterior(void) {
@@ -173,7 +173,7 @@ void remove_impede_busca_posterior(void) {
     registro_t out;
     TEST_ASSERT_FALSE(exhash_search(map, "del-key", &out));
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void remove_permite_reinsercao_da_chave(void) {
@@ -193,7 +193,7 @@ void remove_permite_reinsercao_da_chave(void) {
     exhash_search(map, "reusar", &out);
     TEST_ASSERT_EQUAL_INT(2, out.id);
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void remove_nao_corrompe_outros_registros(void) {
@@ -219,7 +219,7 @@ void remove_nao_corrompe_outros_registros(void) {
 
     TEST_ASSERT_FALSE(exhash_search(map, "kb", &out));
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void insert_chave_vazia(void) {
@@ -229,7 +229,7 @@ void insert_chave_vazia(void) {
     bool ok = exhash_insert(map, &r, "");
     (void)ok;
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void search_chave_vazia(void) {
@@ -240,7 +240,7 @@ void search_chave_vazia(void) {
 
     TEST_ASSERT_FALSE(ok);
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void insert_chave_longa(void) {
@@ -256,7 +256,7 @@ void insert_chave_longa(void) {
     TEST_ASSERT_TRUE(exhash_search(map, chave_longa, &out));
     TEST_ASSERT_EQUAL_INT(777, out.id);
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
 void carga_pesada_sem_corrupcao(void) {
@@ -279,9 +279,31 @@ void carga_pesada_sem_corrupcao(void) {
         TEST_ASSERT_EQUAL_INT(i, out.id);
     }
 
-    exhash_destroy(map);
+    exhash_destroy(map, NULL);
 }
 
+void test_exhash_update(void) {
+    exhash_t *hash = exhash_init(sizeof(double), 32);
+    TEST_ASSERT_NOT_NULL(hash);
+
+    double valor_inicial = 15.5;
+    exhash_insert(hash, &valor_inicial, "v1");
+
+    double valor_novo = 42.0;
+    bool atualizou = exhash_update(hash, "v1", &valor_novo);
+    TEST_ASSERT_TRUE_MESSAGE(atualizou, "O update deveria retornar true para chave existente");
+
+    double valor_lido = 0.0;
+    bool achou = exhash_search(hash, "v1", &valor_lido);
+    TEST_ASSERT_TRUE(achou);
+    TEST_ASSERT_EQUAL_DOUBLE(42.0, valor_lido);
+
+    double outro_valor = 99.9;
+    bool atualizou_falso = exhash_update(hash, "v_fantasma", &outro_valor);
+    TEST_ASSERT_FALSE_MESSAGE(atualizou_falso, "O update deveria retornar false para chave inexistente");
+
+    exhash_destroy(hash, NULL);
+}
 
 int main(void) {
     UNITY_BEGIN();
@@ -308,6 +330,8 @@ int main(void) {
     RUN_TEST(search_chave_vazia);
     RUN_TEST(insert_chave_longa);
     RUN_TEST(carga_pesada_sem_corrupcao);
+
+    RUN_TEST(test_exhash_update);
 
     return UNITY_END();
 }
