@@ -18,6 +18,7 @@ t1
 CMakeLists.txt
 *.txt
 .idea
+/t2
 
 build
 
