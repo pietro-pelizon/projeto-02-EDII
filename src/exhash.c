@@ -145,6 +145,27 @@ void *exhash_remove(const exhash_t *map, const char *key) {
     return NULL;
 }
 
+bool exhash_update(exhash_t *map, const char *key, const void *new_data) {
+    if (!map || !key || !new_data) return false;
+
+    uint64_t hashed_key = murmurhash3_64(key, strlen(key), 0);
+    uint64_t idx = hashed_key & dir_mask(map);
+    bucket_t *b = map -> directory[idx];
+    uint64_t sz = slot_size(map);
+
+    for (uint16_t i = 0; i < b -> record_count; i++) {
+        uint64_t stored_key;
+        memcpy(&stored_key, b -> data + i * sz, sizeof(uint64_t));
+
+        if (stored_key == hashed_key) {
+            // Sobrescreve o payload exatamente no mesmo lugar
+            memcpy(b -> data + i * sz + sizeof(uint64_t), new_data, map -> record_size);
+            return true;
+        }
+    }
+    return false;
+}
+
 void exhash_foreach(const exhash_t *map, void (*action)(void *data, void *context), void *context) {
     if (!map || !action) return;
 
