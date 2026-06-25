@@ -9,12 +9,14 @@
 FILE *svg_init(const char* caminho_arquivo) {
 	FILE *svg = fopen(caminho_arquivo, "w");
 	if (svg == NULL) {
-		perror("ERRO ao abrir o arquivo SVG");
+		fprintf(stderr, "Erro ao abrir o arquivo SVG. (svg_handler.c:%d)\n", __LINE__);
 		return NULL;
 	}
 
-	fprintf(svg, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
-	fprintf(svg, "<svg xmlns:svg=\"http://www.w3.org/2000/svg\" xmlns=\"http://www.w3.org/2000/svg\" width=\"15000\" height=\"15000\">\n");
+	fprintf(svg, "<svg xmlns:svg=\"http://www.w3.org/2000/svg\" "
+				 "xmlns=\"http://www.w3.org/2000/svg\" "
+				 "xmlns:xlink=\"http://www.w3.org/1999/xlink\" "
+				 "width=\"15000\" height=\"15000\">\n");
 
 	fprintf(svg, "<g>\n");
 
@@ -51,7 +53,7 @@ void svg_close(FILE *svg) {
 
 void svg_posicao_endereco(FILE *svg, double x, double y, char *id) {
 	fprintf(svg, "<line x1=\"%.2lf\" y1=\"%.2lf\" x2=\"%.2lf\" y2=\"10\" stroke=\"red\" stroke-dasharray=\"5,5\" />\n", x, y, x);
-	fprintf(svg, "<text x=\"%.2lf\" y=\"10\" fill=\"red\" font-size=\"12\">%s</text>\n", x, id);
+	fprintf(svg, "<text x=\"%.2lf\" y=\"14\" fill=\"red\" font-size=\"16\">%s</text>\n", x, id);
 }
 
 void svg_rect_componente_conexo(FILE *svg, char *cor, double min_x, double min_y, double max_x, double max_y){
@@ -97,3 +99,36 @@ void svg_desenha_placas(FILE *svg, const char *id_src, const char *id_dst, graph
 	);
 }
 
+void svg_anima_caminho(FILE *svg, list_t *caminho, graph_t *g, const char *id_path, double velocidade) {
+	if (list_size(caminho) < 2) return;
+
+	// Escreve o <path> invisível com o trajeto
+	fprintf(svg, "<path id=\"%s\" fill=\"none\" stroke=\"none\" d=\"", id_path);
+
+	list_node_t *no = list_node_front(caminho);
+	bool primeiro = true;
+	while (no != NULL) {
+		const char *id = list_node_data(no);
+		vertex_t *v = graph_get_vertex(g, id);
+		ponto_t *p = vertex_get_data(v);
+		fprintf(svg, "%s%.2lf,%.2lf",
+				primeiro ? "M " : " L ",
+				ponto_get_x(p), ponto_get_y(p));
+		primeiro = false;
+		no = list_node_next(no);
+	}
+	fprintf(svg, "\" />\n");
+
+	fprintf(svg, "<image href=\"/home/pietro/Imagens/Capturas de tela/Captura de tela de 2026-05-28 15-30-39.png\" "
+			 "x=\"-60\" y=\"-60\" width=\"120\" height=\"120\">\n");
+	fprintf(svg, "    <animateMotion dur=\"%lf\" repeatCount=\"indefinite\">\n", velocidade);
+	fprintf(svg, "        <mpath xlink:href=\"#%s\"/>\n", id_path);
+	fprintf(svg, "    </animateMotion>\n");
+	fprintf(svg, "</image>\n");
+}
+
+void svg_quadra_foreach_cb(void *record_data, void *context) {
+	FILE *svg = (FILE *)context;
+	quadra_t *q = *(quadra_t **)record_data;
+	svg_quadra_insert(svg, q);
+}
