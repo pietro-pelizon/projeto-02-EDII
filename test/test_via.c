@@ -14,7 +14,7 @@ static void destrutor_ponto(void *data) { ponto_destroy((ponto_t *)data); }
 static void destrutor_rua(void *data) { rua_destroy((rua_t *)data); }
 
 static graph_t *novo_grafo(void) {
-    return graph_init(NULL, destrutor_rua, destrutor_ponto);
+    return graph_init(destrutor_rua, destrutor_ponto);
 }
 
 // Cria um arquivo .via temporário com o conteúdo fornecido e retorna o path.
