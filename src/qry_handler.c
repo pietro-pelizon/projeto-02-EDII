@@ -24,16 +24,6 @@
 /* ----- Structs auxiliares ----- */
 /*------------------------------------------------------------------------------------------*/
 
-// Outra struct de contexto para poder passar para nossa
-// função de iterar pelos vértices do vetor, agora no comando 'regs'
-typedef struct stContextoRegs {
-    double vl;
-    exhash_t *visitados;    // evita passar pelo mesmo vértice duas vezes
-    graph_t *g;
-    int qtd_componentes;
-    FILE *svg;
-} regs_ctx_t;
-
 typedef struct stRegistrador {
     char *id;
     char *id_mais_proximo;
@@ -43,7 +33,7 @@ typedef struct stRegistrador {
 // precisa para atualizar a velocidade
 // média das arestas na região especificada
 typedef struct stContextoMvm {
-    double rx, ry, rh, rw;
+    double rx, ry, rw, rh;
     double nova_velocidade_media;
     graph_t *g;
 } mvm_ctx_t;
@@ -75,7 +65,6 @@ static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg);
 static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt);
 static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_t *registradores);
 
-static void desenha_caminho(FILE *svg, list_t *caminho, const char *cor_caminho, graph_t *g);
 static bool is_dentro_da_regiao(double px, double py, double rx, double ry, double rw, double rh);
 static int compara_comprimento_arestas(const void *a, const void *b);
 static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex_data, list_t *adjacencia, void *contexto);
@@ -85,7 +74,12 @@ static void registrador_destroy(void *reg);
 static void checa_vertice_mais_proximo(const char *id, void *vertex_data, list_t *adj, void *context);
 static char *achar_vertice_mais_proximo(graph_t *g, double x, double y);
 static double calcula_tempo_caminho(list_t *caminho, graph_t *g);
-static void iterator_mvm(list_t  *adjacencia, mvm_ctx_t *ctx);
+static void iterator_att_vm(list_t *adjacencia, mvm_ctx_t *ctx);
+static void iterator_extrai_arestas(list_t *adjacent, exp_ctx_t *ctx, const char *id_origem);
+static void cria_caminho(FILE *svg, list_t *caminho_curto, list_t *caminho_rapido, char *cor_rapido, char *cor_curto, graph_t *g,
+    double duracao_curto, double duracao_rapido, registrador_t *src, registrador_t *dst);
+static void decide_tempo(double tempo_rapido, double tempo_curto, double *duracao_rapido, double *duracao_curto);
+static void iterator_exp(exp_ctx_t contexto, exhash_t *pais, double vl, graph_t *g, FILE *svg);
 
 /*------------------------------------------------------------------------------------------*/
 /* ----- Função principal do módulo ----- */
@@ -194,7 +188,7 @@ static void comando_mvm(char *linha_atual, graph_t *g) {
     }
 
     // Prepara a wrapper (struct de contexto) com os dados
-    mvm_ctx_t contexto = { x, y, h, w, nova_vm, g };
+    mvm_ctx_t contexto = { x, y, w, h, nova_vm, g };
 
     // Varre o grafo inteiro, checa se as arestas estão
     // na região especificada e atualiza sua velocidade média
@@ -241,30 +235,7 @@ static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
     exhash_t *pais = exhash_init(sizeof(char *), EXHASH_BUCKET_BYTES(sizeof(char *), 8));
 
     // Itera sobre as arestas (ruas) do grafo
-    for (int i = 0; i < contexto.index; i++) {
-        const char *id_origem = contexto.array[i].id_origem;
-        const char *id_destino = contexto.array[i].id_destino;
-
-        // Checa se src e dst já estão interligadas
-        if (strcmp(uf_find(pais, id_origem), uf_find(pais, id_destino)) != 0) {
-
-            // Conecta src e dst (coloca na MST)
-            uf_union(pais, id_origem, id_destino);
-
-            rua_t *rua = edge_get_data(contexto.array[i].aresta);
-
-            // Checa se a rua atende o requisito de vl
-            if (rua_get_velocidade_media(rua) < vl) {
-
-                // Se sim, aumenta sua velocidade média em 50%
-                rua_set_velocidade_media(rua, rua_get_velocidade_media(rua) * 1.5);
-
-                // Chama a função que pinta a aresta de vermelho no (.svg)
-                svg_linha_caminho(svg, id_origem, id_destino, g, "red");
-
-            }
-        }
-    }
+    iterator_exp(contexto, pais, vl, g, svg);
 
 
     fprintf(txt, "[*] exp %.2lf\n", vl);
@@ -307,14 +278,9 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_
     double tempo_rapido = calcula_tempo_caminho(caminho_rapido, g);
 
     // Ancora o mais rápido em 6s, escala o mais lento proporcionalmente
-    double duracao_rapido, duracao_curto;
-    if (tempo_rapido <= tempo_curto) {
-        duracao_rapido = 6.0;
-        duracao_curto  = 6.0 * (tempo_curto / tempo_rapido);
-    } else {
-        duracao_curto  = 6.0;
-        duracao_rapido = 6.0 * (tempo_rapido / tempo_curto);
-    }
+    double duracao_rapido = 0.0, duracao_curto = 0.0;
+    decide_tempo(tempo_rapido, tempo_curto, &duracao_rapido, &duracao_curto);
+
 
 
     fprintf(txt, "[*] p? %s %s %s %s\n", id_src, id_dst, cor_curto, cor_rapido);
@@ -324,19 +290,8 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_
     }
 
     else {
-        desenha_caminho(svg, caminho_curto, cor_curto, g);
-        desenha_caminho(svg, caminho_rapido, cor_rapido, g);
-
-        static int p_contador = 0;
-        p_contador++;
-
-        char id_curto[32], id_rapido[32];
-        snprintf(id_curto,  sizeof(id_curto),  "path_curto_%d",  p_contador);
-        snprintf(id_rapido, sizeof(id_rapido), "path_rapido_%d", p_contador);
-
-        svg_anima_caminho(svg, caminho_curto,  g, id_curto, duracao_curto);
-        svg_anima_caminho(svg, caminho_rapido, g, id_rapido, duracao_rapido);
-        svg_desenha_placas(svg, src -> id_mais_proximo, dst -> id_mais_proximo, g);
+        cria_caminho(svg, caminho_curto, caminho_rapido, cor_rapido, cor_curto, g,
+            duracao_curto, duracao_rapido, src, dst);
         }
 
 
@@ -348,6 +303,60 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_
 /*------------------------------------------------------------------------------------------*/
 /* ----- Implementações static ----- */
 /*------------------------------------------------------------------------------------------*/
+
+static void iterator_exp(exp_ctx_t contexto, exhash_t *pais, double vl, graph_t *g, FILE *svg) {
+    for (int i = 0; i < contexto.index; i++) {
+        const char *id_origem = contexto.array[i].id_origem;
+        const char *id_destino = contexto.array[i].id_destino;
+
+        // Checa se src e dst já estão interligadas
+        if (strcmp(uf_find(pais, id_origem), uf_find(pais, id_destino)) != 0) {
+
+            // Conecta src e dst (coloca na MST)
+            uf_union(pais, id_origem, id_destino);
+
+            rua_t *rua = edge_get_data(contexto.array[i].aresta);
+
+            // Checa se a rua atende o requisito de vl
+            if (rua_get_velocidade_media(rua) < vl) {
+
+                // Se sim, aumenta sua velocidade média em 50%
+                rua_set_velocidade_media(rua, rua_get_velocidade_media(rua) * 1.5);
+
+                // Chama a função que pinta a aresta de vermelho no (.svg)
+                svg_linha_caminho(svg, id_origem, id_destino, g, "red");
+
+            }
+        }
+    }
+}
+
+
+static void decide_tempo(double tempo_rapido, double tempo_curto, double *duracao_rapido, double *duracao_curto) {
+    if (tempo_rapido <= tempo_curto) {
+        *duracao_rapido = 6.0;
+       *duracao_curto  = 6.0 * (tempo_curto / tempo_rapido);
+    } else {
+        *duracao_curto  = 6.0;
+        *duracao_rapido = 6.0 * (tempo_rapido / tempo_curto);
+    }
+}
+
+static void cria_caminho(FILE *svg, list_t *caminho_curto, list_t *caminho_rapido, char *cor_rapido, char *cor_curto, graph_t *g,
+    double duracao_curto, double duracao_rapido, registrador_t *src, registrador_t *dst) {
+
+    static int p_contador = 0;
+    p_contador++;
+
+    char id_curto[32], id_rapido[32];
+    snprintf(id_curto,  sizeof(id_curto),  "path_curto_%d",  p_contador);
+    snprintf(id_rapido, sizeof(id_rapido), "path_rapido_%d", p_contador);
+
+    svg_anima_caminho(svg, caminho_curto,  g, id_curto, duracao_curto, cor_curto);
+    svg_anima_caminho(svg, caminho_rapido, g, id_rapido, duracao_rapido, cor_rapido);
+    svg_desenha_placas(svg, src -> id_mais_proximo, dst -> id_mais_proximo, g);
+}
+
 static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex_data, list_t *adjacencia, void *contexto) {
 
     // Diz ao compilador que o parâmetro está sendo ignorado.
@@ -366,8 +375,15 @@ static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex
         return;
     }
 
+
     // Itera sobre as arestas que saem desse vértice
 
+    iterator_att_vm(adjacencia, ctx);
+
+
+}
+
+static void iterator_att_vm(list_t *adjacencia, mvm_ctx_t *ctx) {
     for (list_node_t *no = list_node_front(adjacencia); no != NULL; no = list_node_next(no)) {
 
         // Aresta como tipo opaco
@@ -392,7 +408,6 @@ static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex
             rua_set_velocidade_media(r, ctx -> nova_velocidade_media);
         }
     }
-
 }
 
 // Varre o hashmap e coloca todas as arestas (ruas) num array linear
@@ -406,6 +421,11 @@ static void extrai_arestas(const char *id_origem, void *vertex_data, list_t *adj
     (void)vertex_data;
 
     // Varre todas as ruas que saem desta esquina (vértice)
+    iterator_extrai_arestas(adjacent, ctx, id_origem);
+
+}
+
+static void iterator_extrai_arestas(list_t *adjacent, exp_ctx_t *ctx, const char *id_origem) {
     for (list_node_t *no = list_node_front(adjacent); no != NULL; no = list_node_next(no)) {
         edge_t *aresta = list_node_data(no);
         rua_t *rua = edge_get_data(aresta);
@@ -425,19 +445,6 @@ static bool is_dentro_da_regiao(double px, double py, double rx, double ry, doub
         return true;
     }
     return false;
-}
-
-static void desenha_caminho(FILE *svg, list_t *caminho, const char *cor_caminho, graph_t *g) {
-    list_node_t *atual = list_node_front(caminho);
-
-    while (atual != NULL && list_node_next(atual) != NULL) {
-        const char *id1 = list_node_data(atual);
-        const char *id2 = list_node_data(list_node_next(atual));
-
-        svg_linha_caminho(svg, id1, id2, g, cor_caminho);
-
-        atual = list_node_next(atual);
-    }
 }
 
 static int compara_comprimento_arestas(const void *a, const void *b) {
@@ -513,5 +520,7 @@ static double calcula_tempo_caminho(list_t *caminho, graph_t *g) {
         no = list_node_next(no);
     }
 
+
     return total;
 }
+
