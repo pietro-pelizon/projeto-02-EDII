@@ -22,10 +22,15 @@
  * '<rect>', '<circle>', etc.
  */
 
-/// @brief Cria, abre e inicializa um arquivo SVG com o cabeçalho padrão.
-/// @param caminho_arquivo O nome/caminho do arquivo a ser criado.
-/// @return Retorna um ponteiro para o arquivo (FILE*) pronto para escrita, ou NULL se ocorrer um erro.
-FILE *svg_init(const char *caminho_arquivo);
+
+/// @brief Cria, abre e inicializa um arquivo (.svg) com a tag raiz e o sistema de coordenadas definido.
+/// @param caminho O nome ou caminho do arquivo .svg a ser criado no sistema.
+/// @param min_x Limite esquerdo (x) da área de visualização (ViewBox).
+/// @param min_y Limite superior (y) da área de visualização (ViewBox).
+/// @param max_x Limite direito (x) da área de visualização (ViewBox).
+/// @param max_y Limite inferior (y) da área de visualização (ViewBox).
+/// @return Ponteiro para o arquivo aberto, ou NULL em caso de erro na abertura.
+FILE *svg_init(const char *caminho, double min_x, double min_y, double max_x, double max_y);
 
 /// @brief Desenha um retângulo representando uma quadra no arquivo SVG.
 /// @param svg Ponteiro para o arquivo SVG aberto para escrita.
@@ -67,6 +72,25 @@ void svg_linha_caminho(FILE *svg, const char *id_origem, const char *id_destino,
 /// @param id_dst Identificador do vértice de destino
 /// @param g Ponteiro para o grafo
 void svg_desenha_placas(FILE *svg, const char *id_src, const char *id_dst, graph_t *g);
+
+/// @brief Cria a animação visual de um trajeto no arquivo (.svg).
+/// @param svg Ponteiro para o arquivo (.svg) de saída.
+/// @param caminho Lista encadeada com a sequência de IDs dos vértices que formam o trajeto.
+/// @param g Ponteiro para o grafo (usado para buscar as coordenadas das ruas).
+/// @param id_path Identificador único da animação (ID do elemento na tag XML).
+/// @param velocidade Duração total ou velocidade da animação (geralmente em segundos).
+/// @param cor Cor do caminho
+void svg_anima_caminho(FILE *svg, list_t *caminho, graph_t *g, const char *id_path, double velocidade, const char *cor);
+
+/// @brief Função de callback para desenhar as quadras no (.svg).
+/// @param record_data Quadra a ser desenhada.
+/// @param context Arquivo (.svg).
+void svg_quadra_foreach_cb(void *record_data, void *context);
+
+/// @brief Desenha a infraestrutura básica do mapa (vértices e arestas) no arquivo (.svg).
+/// @param svg Ponteiro para o arquivo (.svg).
+/// @param g Ponteiro para o grafo contendo os dados viários da cidade.
+void svg_desenha_mapa_base(FILE *svg, graph_t *g);
 
 
 #endif //PROJETO_02_EDII_SVG_HANDLER_H

@@ -43,6 +43,13 @@ bool exhash_search(const exhash_t *map, const char *key, void *out_data);
 /// @return Ponteiro alocado com o dado removido (exige free() posterior) ou NULL se não achar.
 void *exhash_remove(const exhash_t *map, const char *key);
 
+/// @brief Atualiza o dado associado a uma chave existente na tabela hash.
+/// @param map Ponteiro para o hashmap extensível.
+/// @param key String contendo a chave de busca.
+/// @param new_data Ponteiro para o novo dado a ser armazenado.
+/// @return true se a chave foi encontrada e atualizada com sucesso, false caso não exista.
+bool exhash_update(exhash_t *map, const char *key, const void *new_data);
+
 /// @brief Itera por todos os elementos únicos do hash e aplica uma função.
 /// @param map Ponteiro para o hash.
 /// @param action Função callback que será aplicada a cada elemento.
