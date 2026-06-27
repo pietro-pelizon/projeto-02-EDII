@@ -15,7 +15,7 @@ char *my_strdup(const char *src) {
 }
 
 void gera_cor_aleatoria(char *buffer) {
-    sprintf(buffer, "#%06X", rand() % 0XFFFFFF);
+    sprintf(buffer, "#%06X", ((rand() << 15) | rand()) & 0xFFFFFF);
 }
 
 const char *uf_find(exhash_t *pais, const char *id) {
