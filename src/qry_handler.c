@@ -194,7 +194,7 @@ static void comando_mvm(char *linha_atual, graph_t *g) {
     }
 
     // Prepara a wrapper (struct de contexto) com os dados
-    mvm_ctx_t contexto = { x, y, w, h, nova_vm, g };
+    mvm_ctx_t contexto = { x, y, h, w, nova_vm, g };
 
     // Varre o grafo inteiro, checa se as arestas estão
     // na região especificada e atualiza sua velocidade média
