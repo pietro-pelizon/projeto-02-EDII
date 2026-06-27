@@ -6,17 +6,20 @@
 #include "../include/ponto.h"
 #include "../include/grafo.h"
 
+
 FILE *svg_init(const char* caminho_arquivo) {
 	FILE *svg = fopen(caminho_arquivo, "w");
 	if (svg == NULL) {
-		fprintf(stderr, "Erro ao abrir o arquivo SVG. (svg_handler.c:%d)\n", __LINE__);
+		fprintf(stderr, "[!] Erro ao abrir o arquivo (.svg): %s (svg_handler.c:%d)\n", caminho_arquivo, __LINE__);
 		return NULL;
 	}
 
 	fprintf(svg, "<svg xmlns:svg=\"http://www.w3.org/2000/svg\" "
 				 "xmlns=\"http://www.w3.org/2000/svg\" "
 				 "xmlns:xlink=\"http://www.w3.org/1999/xlink\" "
-				 "width=\"15000\" height=\"15000\">\n");
+				 "height=\"20000\" width=\"20000\">\n");
+
+
 
 	fprintf(svg, "<g>\n");
 
@@ -33,12 +36,12 @@ void svg_quadra_insert(FILE *svg, const quadra_t *q) {
 		quadra_get_height(q),
 		quadra_get_cor_borda(q),
 		quadra_get_cor_preenchimento(q),
-		quadra_get_stroke_width(q), 0.5);
+		quadra_get_stroke_width(q), 0.8);
 
-	fprintf(svg, "\t<text x=\"%lf\" y=\"%lf\" font-family=\"Arial\" font-size=\"12\" fill=\"black\">%s</text>\n",
-		quadra_get_x(q),
-		quadra_get_y(q) - 2.0,
-		quadra_get_cep(q));
+	fprintf(svg, "  <text x=\"%f\" y=\"%f\" fill=\"dodgerblue\" stroke=\"black\" font-size=\"10\">%s</text>\n",
+				 quadra_get_x(q) + (quadra_get_width(q) / 2),
+				 quadra_get_y(q) + (quadra_get_height(q) / 2) + 4,
+				 quadra_get_cep(q));
 }
 
 void svg_close(FILE *svg) {
@@ -60,7 +63,8 @@ void svg_rect_componente_conexo(FILE *svg, char *cor, double min_x, double min_y
 	double height =  max_y - min_y;
 	double width = max_x - min_x;
 
-	fprintf(svg, "<rect x=\"%.2lf\" y=\"%.2lf\" width=\"%.2lf\" height=\"%.2lf\" fill=\"%s\" fill-opacity=\"0.5\" stroke=\"%s\" stroke-width=\"2\" />\n",
+	fprintf(svg, "<rect x=\"%.2lf\" y=\"%.2lf\" width=\"%.2lf\" height=\"%.2lf\" fill=\"%s\""
+			  " fill-opacity=\"0.5\" stroke=\"%s\" stroke-width=\"2\" stroke-dasharray=\"5,5\" />\n",
 			min_x, min_y, width, height, cor, cor);
 }
 
@@ -130,4 +134,58 @@ void svg_quadra_foreach_cb(void *record_data, void *context) {
 	FILE *svg = (FILE *)context;
 	quadra_t *q = *(quadra_t **)record_data;
 	svg_quadra_insert(svg, q);
+}
+
+typedef struct {
+    FILE *svg;
+    graph_t *g;
+} mapa_ctx_t;
+
+static void desenha_vertice_e_ruas_svg(const char *id_origem, void *v_data, list_t *adj, void *context) {
+    mapa_ctx_t *ctx = (mapa_ctx_t *)context;
+    FILE *svg = ctx -> svg;
+    graph_t *g = ctx -> g;
+
+    ponto_t *pt_origem = (ponto_t *)v_data;
+
+    double ox = ponto_get_x(pt_origem);
+    double oy = ponto_get_y(pt_origem);
+
+    fprintf(svg, "  <circle id=\"%s\" cx=\"%f\" cy=\"%f\" r=\"4.0\" fill=\"blue\" "
+                 "stroke=\"black\" fill-opacity=\"0.5\" />\n", id_origem, ox, oy);
+
+    fprintf(svg, "  <text x=\"%f\" y=\"%f\" fill=\"blue\" font-size=\"4\" "
+                 "text-anchor=\"middle\">%s</text>\n", ox, oy - 6.0, id_origem);
+
+    for (list_node_t *no = list_node_front(adj); no != NULL; no = list_node_next(no)) {
+        edge_t *aresta = list_node_data(no);
+        const char *id_destino = edge_get_target_id(aresta);
+
+        void *v_destino = graph_get_vertex(g, id_destino);
+
+        if (v_destino != NULL) {
+            ponto_t *pt_destino = vertex_get_data(v_destino);
+
+            if (pt_destino != NULL) {
+                double dx = ponto_get_x(pt_destino);
+                double dy = ponto_get_y(pt_destino);
+
+                fprintf(svg, "  <path d=\"M%f,%f L%f,%f\" "
+                             "stroke=\"black\" fill=\"none\" stroke-width=\"1\" "
+                             "marker-end=\"url(#mArrow)\" />\n",
+                             ox, oy, dx, dy);
+            }
+        }
+    }
+}
+
+void svg_desenha_mapa_base(FILE *svg, graph_t *g) {
+    fprintf(svg, "  <defs>\n");
+    fprintf(svg, "    <marker id=\"mArrow\" markerWidth=\"4\" markerHeight=\"4\" refX=\"4.0\" refY=\"2.0\" orient=\"auto\">\n");
+    fprintf(svg, "      <path d=\"M0,0 L0,4.0 L4.0,2.0 z\" style=\"fill: #000000;\" />\n");
+    fprintf(svg, "    </marker>\n");
+    fprintf(svg, "  </defs>\n\n");
+
+    mapa_ctx_t ctx_mapa = { svg, g };
+    graph_foreach_vertex(g, desenha_vertice_e_ruas_svg, &ctx_mapa);
 }
