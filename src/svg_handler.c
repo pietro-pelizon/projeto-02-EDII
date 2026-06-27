@@ -7,22 +7,22 @@
 #include "../include/grafo.h"
 
 
-FILE *svg_init(const char* caminho_arquivo) {
-	FILE *svg = fopen(caminho_arquivo, "w");
-	if (svg == NULL) {
-		fprintf(stderr, "[!] Erro ao abrir o arquivo (.svg): %s (svg_handler.c:%d)\n", caminho_arquivo, __LINE__);
-		return NULL;
-	}
+FILE *svg_init(const char *caminho, double min_x, double min_y, double max_x, double max_y) {
+	FILE *svg = fopen(caminho, "w");
+	if (!svg) return NULL;
 
-	fprintf(svg, "<svg xmlns:svg=\"http://www.w3.org/2000/svg\" "
-				 "xmlns=\"http://www.w3.org/2000/svg\" "
+	double margem = 500.0;
+	double vx = min_x - margem;
+	double vy = min_y - margem;
+	double vw = max_x - min_x + 2 * margem;
+	double vh = max_y - min_y + 2 * margem;
+
+	fprintf(svg, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
+	fprintf(svg, "<svg xmlns=\"http://www.w3.org/2000/svg\" "
 				 "xmlns:xlink=\"http://www.w3.org/1999/xlink\" "
-				 "height=\"20000\" width=\"20000\">\n");
-
-
-
+				 "viewBox=\"%.2lf %.2lf %.2lf %.2lf\">\n",
+				 vx, vy, vw, vh);
 	fprintf(svg, "<g>\n");
-
 	return svg;
 }
 
@@ -38,8 +38,8 @@ void svg_quadra_insert(FILE *svg, const quadra_t *q) {
 		quadra_get_cor_preenchimento(q),
 		quadra_get_stroke_width(q), 0.8);
 
-	fprintf(svg, "  <text x=\"%f\" y=\"%f\" fill=\"dodgerblue\" stroke=\"black\" font-size=\"10\">%s</text>\n",
-				 quadra_get_x(q) + (quadra_get_width(q) / 2),
+	fprintf(svg, "  <text x=\"%f\" y=\"%f\" fill=\"dodgerblue\" stroke=\"black\" font-size=\"14\">%s</text>\n",
+				 quadra_get_x(q) + (quadra_get_width(q) / 2.5),
 				 quadra_get_y(q) + (quadra_get_height(q) / 2) + 4,
 				 quadra_get_cep(q));
 }
@@ -55,8 +55,8 @@ void svg_close(FILE *svg) {
 }
 
 void svg_posicao_endereco(FILE *svg, double x, double y, char *id) {
-	fprintf(svg, "<line x1=\"%.2lf\" y1=\"%.2lf\" x2=\"%.2lf\" y2=\"10\" stroke=\"red\" stroke-dasharray=\"5,5\" />\n", x, y, x);
-	fprintf(svg, "<text x=\"%.2lf\" y=\"14\" fill=\"red\" font-size=\"16\">%s</text>\n", x, id);
+	fprintf(svg, "<line x1=\"%.2lf\" y1=\"%.2lf\" x2=\"%.2lf\" y2=\"-40\" stroke=\"red\" stroke-dasharray=\"15,5\" />\n", x, y, x);
+	fprintf(svg, "<text x=\"%.2lf\" y=\"-45\" fill=\"red\" font-weight=\"bold\"  font-size=\"26\">%s</text>\n", x - 5, id);
 }
 
 void svg_rect_componente_conexo(FILE *svg, char *cor, double min_x, double min_y, double max_x, double max_y){
