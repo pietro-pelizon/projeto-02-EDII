@@ -13,47 +13,54 @@
 #include "rua.h"
 #include "utils.h"
 
-
 #define EXHASH_BUCKET_BYTES(record_size, n_entries) \
 ((sizeof(uint64_t) + (record_size)) * (n_entries) + sizeof(uint16_t) * 2)
 
-// ======= DECLARAÇÕES STATIC ========
+// ======= CONTEXT STRUCTS ========
 
-static void remove_neighbors_edges(void *record_data, void *context);
-static void graph_destroy_internal(void *record_data, void *context);
+typedef struct {
+    graph_t *graph;
+    exhash_t *costs;
+    exhash_t *parents;
+    pqueue_t *min_heap;
+    bool use_time;
+} dijkstra_ctx_t;
 
-
-// Struct para transportar o ID alvo e a função de free do grafo
-// Como a exhash_foreach precisa de um callback fixo, precisamos de uma nova
-// struct que representa os dados que a função recebe
-typedef struct stContext{
+typedef struct {
     const char *target_id;
     void (*destructor_edge_data)(void *);
-} ctx_remove_t;
+} remove_edge_ctx_t;
 
-// Vértice genérico para guardar qualquer tipo de dado
+// ======= STATIC DECLARATIONS ========
+
+static void remove_incoming_edges_cb(void *record_data, void *context);
+static void destroy_graph_internal_cb(void *record_data, void *context);
+static void relax_edges(const char *u_id, double current_cost, dijkstra_ctx_t *ctx);
+static list_t *reconstruct_path(const char *src_id, const char *dst_id, exhash_t *parents);
+static int compare_target_id(void *target_edge, void *edge);
+
+// ======= GRAPH STRUCTS ========
+
 typedef struct stVertex {
     char *id;
     void *data;
     list_t *adjacent;
-
 } vertex_t;
 
-// Aresta genérica para guardar qualquer tipo de dado
 typedef struct stEdge {
     char *id;
     char *target_id;
     void *data;
 } edge_t;
 
-// Grafo genérico que será inicializado com as funções adequadas para manipular
-// qualquer tipo dos dados contidos na aresta e vértice
 typedef struct stGraph {
     exhash_t *vertices;
     int total_vertices;
     void (*destructor_edge_data)(void *data);
     void (*destructor_vertex_data)(void *data);
-}graph_t;
+} graph_t;
+
+// ======= PUBLIC FUNCTIONS ========
 
 graph_t *graph_init(
     void (*destructor_edge_data)(void *data),
@@ -63,53 +70,40 @@ graph_t *graph_init(
     assert(new_graph != NULL);
 
     new_graph -> vertices = exhash_init(sizeof(vertex_t *), 512);
-
     new_graph -> total_vertices = 0;
-
     new_graph -> destructor_edge_data = destructor_edge_data;
     new_graph -> destructor_vertex_data = destructor_vertex_data;
 
     return new_graph;
-
 }
 
 bool graph_add_vertex(graph_t *g, void *data, const char *id) {
-
-    // Checa se vértice com determinado ID já existe.
-    // Caso exista, a função retorna false
     if (exhash_search(g -> vertices, id, NULL)) {
         fprintf(stderr, "Vértice já existente no grafo. (grafo.c:%d)", __LINE__);
         return false;
     }
 
-    // Aloca memória para o novo vértice
     vertex_t *new_vertex = malloc(sizeof(vertex_t));
     assert(new_vertex != NULL);
 
-    // Inicializando campos do vértice
     new_vertex -> id = malloc(strlen(id) + 1);
     strcpy(new_vertex -> id, id);
 
     new_vertex -> data = data;
     new_vertex -> adjacent = list_init();
 
-    // Adiciona um ponteiro do novo vértice ao hashmap do grafo
     exhash_insert(g -> vertices, &new_vertex, id);
 
     return true;
 }
 
-// Função de comparação do destino da aresta, para checar duplicações
-// ao adicionar novas arestas ao grafo
-static int cmp_target_edge(void *target_edge, void *edge) {
-    edge_t *e = (edge_t*) edge;
+static int compare_target_id(void *target_edge, void *edge) {
+    edge_t *e = (edge_t *)edge;
     char *wanted_id = (char *)target_edge;
-
     return strcmp(e -> target_id, wanted_id);
 }
 
-
-bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *target_id, char *street_name) {
+bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *target_id, char *edge_id) {
     assert(g != NULL && data != NULL && src_id != NULL && target_id != NULL);
 
     vertex_t *src_v = NULL;
@@ -118,47 +112,38 @@ bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *targ
     vertex_t *target_v = NULL;
     exhash_search(g -> vertices, target_id, &target_v);
 
-
-    // Se um dos vértices não existir, não é possível
-    // criar a aresta, pois ela já existe
     if (!src_v || !target_v) return false;
 
-    // Checa se já existe uma aresta idêntica, caso exista, não cria nova aresta
-    if (list_search(src_v -> adjacent, ((void *)target_id), cmp_target_edge)) {
+    if (list_search(src_v -> adjacent, ((void *)target_id), compare_target_id)) {
         return false;
     }
 
-    // Cria nova aresta DIRECIONADA e preenche suas informações
-    edge_t *new_edge = malloc (sizeof(edge_t));
+    edge_t *new_edge = malloc(sizeof(edge_t));
     assert(new_edge != NULL);
 
-    new_edge -> target_id = malloc (strlen(target_id) + 1);
+    new_edge -> target_id = malloc(strlen(target_id) + 1);
     strncpy(new_edge -> target_id, target_id, strlen(target_id) + 1);
 
-    new_edge -> id = my_strdup(street_name);
+    new_edge -> id = my_strdup(edge_id);
     new_edge -> data = data;
 
-    // Nova aresta parte de src_v para target_v
     list_push_back(src_v -> adjacent, new_edge);
 
     return true;
 }
 
-bool is_adjacente(graph_t *g, const char *id_v, const char *id_u) {
-    assert(g != NULL && id_v != NULL && id_u != NULL);
-
-    vertex_t *v = NULL;
-    exhash_search(g -> vertices, id_v, &v);
+bool graph_is_adjacent(graph_t *g, const char *u_id, const char *v_id) {
+    assert(g != NULL && u_id != NULL && v_id != NULL);
 
     vertex_t *u = NULL;
-    exhash_search(g -> vertices, id_u, &u);
+    exhash_search(g -> vertices, u_id, &u);
 
-    // Caso um dos dois vértices, impossível checar adjacência
-    // então assumimos que é false
-    if (!v || !u) return false;
+    vertex_t *v = NULL;
+    exhash_search(g -> vertices, v_id, &v);
 
-    // Procura na lista de adjacência de V se existe o vértice U
-    if (list_search(v -> adjacent, ((void *)id_u), cmp_target_edge)) {
+    if (!u || !v) return false;
+
+    if (list_search(u -> adjacent, ((void *)v_id), compare_target_id)) {
         return true;
     }
 
@@ -182,62 +167,53 @@ edge_t *graph_get_edge(graph_t *g, const char *src_id, const char *target_id) {
     assert(g != NULL);
 
     vertex_t *src_v = NULL;
-
     exhash_search(g -> vertices, src_id, &src_v);
+
     if (!src_v) return NULL;
 
-    // Busca a aresta na lista dele usando a função de procurar na lista
-    return list_search(src_v -> adjacent, (void *)target_id, cmp_target_edge);
+    return list_search(src_v -> adjacent, (void *)target_id, compare_target_id);
 }
-
 
 bool graph_remove_edge(graph_t *g, const char *src_id, const char *target_id) {
     assert(g != NULL);
 
     vertex_t *src_v = NULL;
     exhash_search(g -> vertices, src_id, &src_v);
+
     if (!src_v) return false;
 
-    edge_t *e = list_remove_first(src_v -> adjacent, (void *)target_id, cmp_target_edge);
+    edge_t *e = list_remove_first(src_v -> adjacent, (void *)target_id, compare_target_id);
     if (!e) return false;
 
     free(e -> target_id);
     free(e -> id);
-
 
     if (g -> destructor_edge_data && e -> data) {
         g -> destructor_edge_data(e -> data);
     }
 
     free(e);
-
     return true;
 }
 
 bool graph_remove_vertex(graph_t *g, const char *vertex_id) {
     assert(g != NULL);
 
-    // Acha o vértice desejado
     vertex_t *v = graph_get_vertex(g, vertex_id);
     if (!v) return false;
 
-    // Remove cada aresta associada ao vértice a ser destruído
-    ctx_remove_t context = { vertex_id, g -> destructor_edge_data };
-    exhash_foreach(g -> vertices, remove_neighbors_edges, &context);
+    remove_edge_ctx_t context = { vertex_id, g -> destructor_edge_data };
+    exhash_foreach(g -> vertices, remove_incoming_edges_cb, &context);
 
-    // Itera pela sua lista de adjacência destruindo as arestas
     list_free(v -> adjacent, g -> destructor_edge_data);
 
-    // Remove id e dados
     free(v -> id);
     if (g -> destructor_vertex_data && v -> data) {
         g -> destructor_vertex_data(v -> data);
     }
 
-    // Remove o vértice em si
     free(v);
 
-    // Remove o vértice do hashmap geral do grafo
     void *removed = exhash_remove(g -> vertices, vertex_id);
     free(removed);
 
@@ -254,17 +230,11 @@ list_t *graph_get_neighbors(graph_t *g, const char *vertex_id) {
 }
 
 void graph_destroy(graph_t *g) {
-    assert (g != NULL);
+    assert(g != NULL);
 
-    // Itera e destrói todos os vértices e suas respectivas listas de adjacência
-    exhash_foreach(g -> vertices, graph_destroy_internal, g);
-
-    // Destrói a estrutura raiz do Hash Map (Diretório e Baldes)
+    exhash_foreach(g -> vertices, destroy_graph_internal_cb, g);
     exhash_destroy(g -> vertices, NULL);
-
-    // Libera a raiz do grafo
     free(g);
-
 }
 
 int graph_get_total_vertices(graph_t *g) {
@@ -275,19 +245,16 @@ void graph_set_total_vertices(graph_t *g, int new_total_vertices) {
     g -> total_vertices = new_total_vertices;
 }
 
-exhash_t *graph_get_exhash(graph_t *g) {
+exhash_t *graph_get_vertices_map(graph_t *g) {
     return g -> vertices;
 }
 
-// Struct para poder passar as informações para o graph_foreach_vertex
 typedef struct {
     void (*user_callback)(const char *, void *, list_t *, void *);
     void *user_ctx;
 } internal_ctx_t;
 
-// Wrapper que será declarado só aqui nesse módulo
-// para encapsular a lógica da função pública
-static void internal_foreach_wrapper(void *record_data, void *context) {
+static void vertex_foreach_wrapper_cb(void *record_data, void *context) {
     vertex_t *v = *(vertex_t **)record_data;
     internal_ctx_t *ctx = context;
 
@@ -296,45 +263,39 @@ static void internal_foreach_wrapper(void *record_data, void *context) {
     }
 }
 
-
-// Função pública para iterar sobre os vértices sem quebrar a opacidade
 void graph_foreach_vertex(graph_t *g, void (*callback)(const char *id, void *vertex_data, list_t *adjacent, void *context), void *context) {
     assert(g && g -> vertices && callback);
 
-    // Ponte para os outros módulos
     internal_ctx_t bridge = {callback, context};
-
-    exhash_foreach(g -> vertices, internal_foreach_wrapper, &bridge);
+    exhash_foreach(g -> vertices, vertex_foreach_wrapper_cb, &bridge);
 }
 
 void *vertex_get_data(vertex_t *v) {
     assert(v);
-
     return v -> data;
 }
 
 const char *edge_get_target_id(edge_t *e) {
     assert(e);
-
     return e -> target_id;
 }
 
 void *edge_get_data(edge_t *e) {
     assert(e);
-
     return e -> data;
 }
 
-// ======= IMPLEMENTAÇÕES STATIC ========
+// ======= STATIC IMPLEMENTATIONS ========
 
-static void graph_destroy_internal(void *record_data, void *context) {
+static void destroy_graph_internal_cb(void *record_data, void *context) {
     vertex_t *v = *(vertex_t **)record_data;
     graph_t *g = (graph_t *)context;
 
-    for (list_node_t *no = list_node_front(v -> adjacent); no != NULL; no = list_node_next(no)) {
-        edge_t *e = list_node_data(no);
+    for (list_node_t *node = list_node_front(v -> adjacent); node != NULL; node = list_node_next(node)) {
+        edge_t *e = list_node_data(node);
         free(e -> target_id);
         free(e -> id);
+
         if (g -> destructor_edge_data && e -> data) {
             g -> destructor_edge_data(e -> data);
         }
@@ -349,165 +310,132 @@ static void graph_destroy_internal(void *record_data, void *context) {
     free(v);
 }
 
-// O callback que será chamado para CADA vértice do grafo
-static void remove_neighbors_edges(void *record_data, void *context) {
-    // Como o exhash guarda ponteiros, record_data é um (vertex_t **)
+static void remove_incoming_edges_cb(void *record_data, void *context) {
     vertex_t *v = *(vertex_t **)record_data;
-    ctx_remove_t *ctx = (ctx_remove_t *)context;
+    remove_edge_ctx_t *ctx = (remove_edge_ctx_t *)context;
 
-    // Tenta remover a aresta que aponta para o vértice que está morrendo
-    edge_t *aresta_removida = list_remove_first(v -> adjacent, (void *)ctx -> target_id, cmp_target_edge);
+    edge_t *removed_edge = list_remove_first(v -> adjacent, (void *)ctx -> target_id, compare_target_id);
 
-    if (aresta_removida) {
-        free(aresta_removida -> target_id);
-        free(aresta_removida -> id);
-        if (ctx -> destructor_edge_data && aresta_removida -> data) {
-            ctx -> destructor_edge_data(aresta_removida -> data);
+    if (removed_edge) {
+        free(removed_edge -> target_id);
+        free(removed_edge -> id);
+
+        if (ctx -> destructor_edge_data && removed_edge -> data) {
+            ctx -> destructor_edge_data(removed_edge -> data);
         }
-        free(aresta_removida);
+        free(removed_edge);
     }
 }
 
-static void libera_string_do_pais(void *record_data, void *context) {
+static void free_parent_string_cb(void *record_data, void *context) {
     (void)context;
-    // record_data aponta para dentro do bucket onde está guardado o char*
     char *str = *(char **)record_data;
     free(str);
 }
 
-static void libera_pais(exhash_t *pais) {
-    exhash_foreach(pais, libera_string_do_pais, NULL);
-    exhash_destroy(pais, NULL);
+static void destroy_parents_map(exhash_t *parents) {
+    exhash_foreach(parents, free_parent_string_cb, NULL);
+    exhash_destroy(parents, NULL);
 }
 
-list_t *dijkstra(graph_t *g, bool flag_tempo, char *id_src, char *id_dst, double *custo_out) {
-    assert(g != NULL);
+list_t *dijkstra(graph_t *graph, bool use_time, char *src_id, char *dst_id, double *out_cost) {
+    assert(graph != NULL);
 
-    // Inicializando as estruturas necessárias para o algoritmo
-    exhash_t *custos = exhash_init(sizeof(double), EXHASH_BUCKET_BYTES(sizeof(double), 8));
-    assert(custos != NULL);
-    exhash_t *pais = exhash_init(sizeof(char *), EXHASH_BUCKET_BYTES(sizeof(char *), 8));
-    assert(pais != NULL);
-    pqueue_t *min_heap = pq_init(16);
-    assert(min_heap != NULL);
+    dijkstra_ctx_t ctx = {
+        .graph = graph,
+        .costs = exhash_init(sizeof(double), EXHASH_BUCKET_BYTES(sizeof(double), 8)),
+        .parents = exhash_init(sizeof(char *), EXHASH_BUCKET_BYTES(sizeof(char *), 8)),
+        .min_heap = pq_init(16),
+        .use_time = use_time
+    };
 
+    double initial_cost = 0.0;
+    exhash_insert(ctx.costs, &initial_cost, src_id);
+    pq_enqueue(ctx.min_heap, src_id, 0);
 
-    double custo_zero = 0.0;
-    exhash_insert(custos, &custo_zero, id_src);
-    pq_enqueue(min_heap, id_src, 0);
+    while (!pq_is_empty(ctx.min_heap)) {
+        char *curr_id = pq_dequeue(ctx.min_heap);
 
-
-    // Loop principal
-    while (!pq_is_empty(min_heap)) {
-        char *id_esquina = pq_dequeue(min_heap);
-
-        // Se o id retirado é o id do destino
-        // temos o melhor caminho
-        if (strcmp(id_esquina, id_dst) == 0) {
-            free(id_esquina);
+        if (strcmp(curr_id, dst_id) == 0) {
+            free(curr_id);
             break;
         }
 
-        // Temos que olhar para cada vértice adjacente a esse
-        // e checar se o caminho é melhor
-        list_t *vizinhos = graph_get_neighbors(g, id_esquina);
+        double current_cost = 0.0;
+        exhash_search(ctx.costs, curr_id, &current_cost);
 
-        double custo_atual = 0.0;
-        double custo_lido = 0.0;
+        relax_edges(curr_id, current_cost, &ctx);
 
-        // Buscando o custo acumulado para chegar no vértice atual
-        bool found_esquina = exhash_search(custos, id_esquina, &custo_lido);
+        free(curr_id);
+    }
 
-        // Se achou, esse será o custo atual
-        custo_atual = found_esquina ? custo_lido : custo_atual;
+    list_t *path = list_init();
 
-        // Loop para olhar todos os vértices adjacentes
-        for (list_node_t *no = list_node_front(vizinhos); no != NULL; no = list_node_next(no)) {
+    if (exhash_search(ctx.costs, dst_id, NULL)) {
+        list_free(path, NULL);
+        path = reconstruct_path(src_id, dst_id, ctx.parents);
 
-            // Obtendo o payload (dado interno) da aresta
-            edge_t *aresta = list_node_data(no);
-            rua_t *rua = edge_get_data(aresta);
+        if (out_cost != NULL) {
+            exhash_search(ctx.costs, dst_id, out_cost);
+        }
+    }
 
-            // Temos que olhar para seu vizinho e descobrir
-            // qual o custo para chegar nele
-            const char *id_vizinho = edge_get_target_id(aresta);
+    pq_destroy(ctx.min_heap);
+    exhash_destroy(ctx.costs, NULL);
+    destroy_parents_map(ctx.parents);
 
-            // Se a flag tempo for true, o peso será o tempo mínimo do trajeto
-            // se não, o peso será o comprimento
-            double peso = flag_tempo ? rua_get_comprimento(rua)/rua_get_velocidade_media(rua) : rua_get_comprimento(rua);
+    return path;
+}
 
-            // Cálculo do novo custo
-            double novo_custo = custo_atual + peso;
+static void relax_edges(const char *u_id, double current_cost, dijkstra_ctx_t *ctx) {
+    list_t *neighbors = graph_get_neighbors(ctx -> graph, u_id);
 
-            // Inicializa o custo para ir ao vizinho com infinito
-            double custo_vizinho = INFINITY;
+    for (list_node_t *node = list_node_front(neighbors); node != NULL; node = list_node_next(node)) {
+        edge_t *edge = list_node_data(node);
+        rua_t *street = edge_get_data(edge);
+        const char *v_id = edge_get_target_id(edge);
 
-            double custo_vizinho_lido = 0.0;
-            bool found_vizinho = exhash_search(custos, id_vizinho, &custo_vizinho_lido);
+        double weight = ctx -> use_time ? rua_get_comprimento(street) / rua_get_velocidade_media(street) : rua_get_comprimento(street);
+        double new_cost = current_cost + weight;
 
-            custo_vizinho = found_vizinho ? custo_vizinho_lido : custo_vizinho;
+        double v_cost = INFINITY;
+        bool found_v = exhash_search(ctx -> costs, v_id, &v_cost);
 
-            // Teste principal: O custo para chegar a esse novo vizinho
-            // é menor do que o menor custo conhecido até agora?
-
-            if (novo_custo < custo_vizinho) {
-                if (found_vizinho)
-                    exhash_update(custos, id_vizinho, &novo_custo);
-                else {
-                    exhash_insert(custos, &novo_custo, id_vizinho);
-                }
-                
-                void *old = exhash_remove(pais, id_vizinho);
-                if (old != NULL) {
-                    char *old_str = *(char **)old;
-                    free(old_str);
-                    free(old);
-                }
-
-                char *copia_id_esquina = my_strdup(id_esquina);
-                exhash_insert(pais, &copia_id_esquina, id_vizinho);
-                pq_enqueue(min_heap, id_vizinho, novo_custo);
+        if (new_cost < v_cost) {
+            if (found_v) {
+                exhash_update(ctx -> costs, v_id, &new_cost);
+            } else {
+                exhash_insert(ctx -> costs, &new_cost, v_id);
             }
+
+            void *old_parent = exhash_remove(ctx -> parents, v_id);
+            if (old_parent != NULL) {
+                free(*(char **)old_parent);
+                free(old_parent);
+            }
+
+            char *u_id_copy = my_strdup(u_id);
+            exhash_insert(ctx -> parents, &u_id_copy, v_id);
+            pq_enqueue(ctx -> min_heap, v_id, new_cost);
         }
-        free(id_esquina);
     }
-
-    list_t *caminho = list_init();
-
-    // Teste para ver se foi possível alcançar o destino
-    if (exhash_search(custos, id_dst, NULL) == false) {
-        pq_destroy(min_heap);
-        exhash_destroy(custos, NULL);
-        libera_pais(pais);
-        return caminho;
-    }
-
-    // Backtracking
-    const char *atual = id_dst;
-    while (atual != NULL) {
-        list_push_front(caminho, my_strdup(atual));
-
-        // O backtracking se conclui ao chegarmos na origem
-        if (strcmp(atual, id_src) == 0) {
-            break;
-        }
-        const char *prox = NULL;
-        if (!exhash_search(pais, atual, &prox)) break;
-        atual = prox;
-    }
-
-    double custo_final = 0.0;
-    exhash_search(custos, id_dst, &custo_final);
-    if (custo_out != NULL) *custo_out = custo_final;
-
-    pq_destroy(min_heap);
-    exhash_destroy(custos, NULL);
-    libera_pais(pais);
-
-    return caminho;
-
 }
 
+static list_t *reconstruct_path(const char *src_id, const char *dst_id, exhash_t *parents) {
+    list_t *path = list_init();
+    const char *current = dst_id;
 
+    while (current != NULL) {
+        list_push_front(path, my_strdup(current));
 
+        if (strcmp(current, src_id) == 0) {
+            break;
+        }
 
+        const char *next = NULL;
+        if (!exhash_search(parents, current, &next)) break;
+        current = next;
+    }
+
+    return path;
+}
