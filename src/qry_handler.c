@@ -68,13 +68,13 @@ typedef struct stContextoMaisProximo {
     char *id_mais_proximo;
 } mais_proximo_ctx_t;
 
+
 static void comando_ao(char *linha_atual, graph_t *g, exhash_t *quadras, list_t *registradores, FILE *svg, FILE *txt);
 static void comando_mvm(char *linha_atual, graph_t *g);
 static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg);
 static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt);
 static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_t *registradores);
 
-static void descobre_componente_conexo(const char *id_start, void *v_data, list_t *adj_start, void *context);
 static void desenha_caminho(FILE *svg, list_t *caminho, const char *cor_caminho, graph_t *g);
 static bool is_dentro_da_regiao(double px, double py, double rx, double ry, double rw, double rh);
 static int compara_comprimento_arestas(const void *a, const void *b);
@@ -85,6 +85,7 @@ static void registrador_destroy(void *reg);
 static void checa_vertice_mais_proximo(const char *id, void *vertex_data, list_t *adj, void *context);
 static char *achar_vertice_mais_proximo(graph_t *g, double x, double y);
 static double calcula_tempo_caminho(list_t *caminho, graph_t *g);
+static void iterator_mvm(list_t  *adjacencia, mvm_ctx_t *ctx);
 
 /*------------------------------------------------------------------------------------------*/
 /* ----- Função principal do módulo ----- */
@@ -201,31 +202,11 @@ static void comando_mvm(char *linha_atual, graph_t *g) {
 }
 
 static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg) {
-    double vm_ignorada = 0;
+    double vl_min = 0;
+    if (sscanf(linha_atual, "regs %lf", &vl_min) != 1) return;
 
-    // Coleta os dados da linha atual
-    int lidos = sscanf(linha_atual, "regs %lf", &vm_ignorada);
-    if (lidos != 1) {
-        fprintf(stderr, "Linha mal formatada no comando 'regs'. (qry_handler.c:%d)\n", __LINE__);
-        return;
-    }
-
-    // Cria um hashmap temporário só para guardar as strings dos IDs visitados
-    exhash_t *visitados = exhash_init(sizeof(int), EXHASH_BUCKET_BYTES(sizeof(int), 8));
-
-    regs_ctx_t contexto = {vm_ignorada, visitados, g, 0, svg};
-
-    // Manda o grafo varrer TODOS os vértices
-    graph_foreach_vertex(g, descobre_componente_conexo, &contexto);
-
-    // Gravando no .txt
-    fprintf(txt, "[*] regs %lf\n", vm_ignorada);
-    fprintf(txt, "%d\n", contexto.qtd_componentes);
-
-    // Destruindo hashmap temporário
-    exhash_destroy(visitados, NULL);
+    // TODO: Implementar algoritmo de Tarjan para achar SCC
 }
-
 
 static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
     assert (g != NULL && linha_atual != NULL);
@@ -285,7 +266,7 @@ static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
         }
     }
 
-    
+
     fprintf(txt, "[*] exp %.2lf\n", vl);
 
     exhash_destroy(pais, NULL);
@@ -311,7 +292,7 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_
         fprintf(stderr, "Registrador de origem não encontrado! (qry_handler.c:%d)\n", __LINE__);
         return;
     }
-    
+
     registrador_t *dst = list_search(registradores, id_dst, compara_registradores);
     if (!dst) {
         fprintf(stderr, "Registrador de destino não encontrado! (qry_handler.c:%d)\n", __LINE__);
@@ -367,83 +348,6 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_
 /*------------------------------------------------------------------------------------------*/
 /* ----- Implementações static ----- */
 /*------------------------------------------------------------------------------------------*/
-
-// Basicamente uma operação de BFS só que com o critério
-// de só considerar ruas com velocidade média ≥ vl
-static void descobre_componente_conexo(const char *id_start, void *v_data, list_t *adj_start, void *context) {
-    assert(id_start != NULL && v_data != NULL && adj_start != NULL && context != NULL);
-
-    regs_ctx_t *ctx = context;
-
-    // Se o exhash_destroy(visitados) retorna true, o vértice está presente no hashmap, já o visitamos, então encerra a função
-    if (exhash_search(ctx -> visitados, id_start, NULL)) {
-        return;
-    }
-
-    // Aumenta o contador de componentes
-    ctx -> qtd_componentes++;
-
-    double min_x = INFINITY, min_y = INFINITY;
-    double max_x = -INFINITY, max_y = -INFINITY;
-
-    list_t *bfs_fila = list_init();
-    assert(bfs_fila != NULL);
-
-    // Enfileira a origem
-    list_push_back(bfs_fila, (void*)id_start);
-
-    // Marca a origem como visitada no hashmap
-    int dummy = 1;
-    exhash_insert(ctx -> visitados, &dummy, id_start);
-
-    while (list_node_front(bfs_fila) != NULL) {
-
-        // Remove o ID do início da lista
-        char *id_atual = list_pop_front(bfs_fila);
-
-        // Pega as coordenadas para o Bounding Box
-        vertex_t *v_atual = graph_get_vertex(ctx -> g, id_atual);
-        ponto_t *pt_atual = vertex_get_data(v_atual);
-        double px = ponto_get_x(pt_atual);
-        double py = ponto_get_y(pt_atual);
-
-        if (px < min_x) min_x = px;
-        if (px > max_x) max_x = px;
-        if (py < min_y) min_y = py;
-        if (py > max_y) max_y = py;
-
-
-        // Pega a lista de adjacência do vértice atual
-        list_t *adj_atual = graph_get_neighbors(ctx -> g, id_atual);
-
-        // Itera sobre todas as arestas (ruas) que saem desse vértice
-        for (list_node_t *no = list_node_front(adj_atual); no != NULL; no = list_node_next(no)) {
-            edge_t *aresta = list_node_data(no);
-            rua_t *rua = edge_get_data(aresta);
-
-            // Checa se a rua atende o vl especificado
-            if (rua_get_velocidade_media(rua) >= ctx -> vl) {
-                const char *id_destino = edge_get_target_id(aresta);
-
-                // Se não foi visitado, adiciona no exhash de visitados
-                if (!exhash_search(ctx -> visitados, id_destino, NULL)) {
-                    exhash_insert(ctx -> visitados, &dummy, id_destino);
-
-                    list_push_back(bfs_fila, (void *)id_destino);
-                }
-            }
-        }
-    }
-
-
-
-    list_free(bfs_fila, NULL);
-    char cor[10];
-    gera_cor_aleatoria(cor);
-
-    svg_rect_componente_conexo(ctx -> svg, cor, min_x, min_y, max_x, max_y);
-}
-
 static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex_data, list_t *adjacencia, void *contexto) {
 
     // Diz ao compilador que o parâmetro está sendo ignorado.
@@ -488,6 +392,7 @@ static void atualiza_velocidade_media_aresta(const char *id_origem, void *vertex
             rua_set_velocidade_media(r, ctx -> nova_velocidade_media);
         }
     }
+
 }
 
 // Varre o hashmap e coloca todas as arestas (ruas) num array linear
