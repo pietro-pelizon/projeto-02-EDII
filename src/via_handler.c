@@ -15,7 +15,10 @@ void via_handler(char *path_via, graph_t *g) {
     assert(path_via != NULL && g != NULL);
 
     FILE *arquivo_via = fopen(path_via, "r");
-    assert(arquivo_via);
+    if (arquivo_via == NULL) {
+        fprintf(stderr, "[!] Erro ao abrir o arquivo (.via): %s (via_handler.c:%d)\n", path_via, __LINE__);
+        return;
+    }
 
     char linha_leitura[512];
     int nv = 0;
