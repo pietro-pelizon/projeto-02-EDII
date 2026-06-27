@@ -32,10 +32,21 @@ $(OBJ_DIR)/%.o: %.c
 # TARGETS DE TESTES
 # ==========================================================
 
-test_geo: $(CORE_OBJS) ../test/t_geo_handler.c ../unity/unity.c
-	@echo "Compilando testes do geo_handler..."
+test_%: $(CORE_OBJS) ../test/test_%.c ../unity/unity.c
+	@echo "Compilando $@..."
 	@$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
-	@echo "Executando testes..."
+	@echo "Executando testes...\n"
 	@./$@
 
-.PHONY: all clean test_geo
+# ==========================================================
+# TARGETS DE LIMPEZA
+# ==========================================================
+
+clean:
+	@echo "Limpando build..."
+	@rm -rf $(OBJ_DIR)
+	@rm -f $(PROJ_NAME)
+	@rm -f test_*
+	@echo "Limpo!"
+
+.PHONY: all clean test_% ted
