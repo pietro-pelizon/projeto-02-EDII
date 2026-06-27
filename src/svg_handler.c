@@ -99,12 +99,11 @@ void svg_desenha_placas(FILE *svg, const char *id_src, const char *id_dst, graph
 	);
 }
 
-void svg_anima_caminho(FILE *svg, list_t *caminho, graph_t *g, const char *id_path, double velocidade) {
+void svg_anima_caminho(FILE *svg, list_t *caminho, graph_t *g, const char *id_path, double velocidade, const char *cor) {
 	if (list_size(caminho) < 2) return;
 
-	// Escreve o <path> invisível com o trajeto
-	fprintf(svg, "<path id=\"%s\" fill=\"none\" stroke=\"none\" d=\"", id_path);
-
+	// Path visível — faz o traço E serve de trilho para a animação
+	fprintf(svg, "<path id=\"%s\" fill=\"none\" stroke=\"%s\" stroke-width=\"6\" d=\"", id_path, cor);
 	list_node_t *no = list_node_front(caminho);
 	bool primeiro = true;
 	while (no != NULL) {
@@ -120,7 +119,7 @@ void svg_anima_caminho(FILE *svg, list_t *caminho, graph_t *g, const char *id_pa
 	fprintf(svg, "\" />\n");
 
 	fprintf(svg, "<image href=\"/home/pietro/Imagens/Capturas de tela/Captura de tela de 2026-05-28 15-30-39.png\" "
-			 "x=\"-60\" y=\"-60\" width=\"120\" height=\"120\">\n");
+				 "x=\"-60\" y=\"-60\" width=\"120\" height=\"120\">\n");
 	fprintf(svg, "    <animateMotion dur=\"%lf\" repeatCount=\"indefinite\">\n", velocidade);
 	fprintf(svg, "        <mpath xlink:href=\"#%s\"/>\n", id_path);
 	fprintf(svg, "    </animateMotion>\n");
