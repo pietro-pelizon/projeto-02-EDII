@@ -26,9 +26,12 @@ typedef struct stVertex vertex_t;
 typedef struct stEdge edge_t;
 typedef struct stGraph graph_t;
 
+
 #include <stdbool.h>
 #include "exhash.h"
 #include "lista.h"
+
+typedef bool (*edge_filter_fn)(void *edge_data, void *context);
 
 /// @brief Inicializa um grafo com as funções corretas para manipular
 /// os tipos de dados do vértice e aresta
@@ -59,7 +62,7 @@ bool graph_add_edge(graph_t *g, void *data, const char *src_id, const char *targ
 /// @param id_v Identificador do vértice de origem
 /// @param id_u Identificador do vértice de destino
 /// @return true se forem adjacentes (V ⇨ U), false caso contrário
-bool is_adjacente(graph_t *g, const char *id_v, const char *id_u);
+bool graph_is_adjacent(graph_t *g, const char *id_v, const char *id_u);
 
 /// @brief Busca um vértice no grafo pelo seu identificador
 /// @param g Ponteiro para o grafo
@@ -138,8 +141,10 @@ void *edge_get_data(edge_t *e);
 /// de travessia ou caminho mais curto
 /// @param id_src Identificador do ponto de origem
 /// @param id_dst Identificador do ponto de destino
+/// @param custo_out Variável para guardar o custo total do caminho
 /// @return Retorna uma lista ordenada com os identificadores
 /// dos vértices que compoem o melhor caminho
-list_t *dijkstra(graph_t *g, bool flag_tempo, char *id_src,  char *id_dst);
+list_t *dijkstra(graph_t *g, bool flag_tempo, char *id_src,  char *id_dst, double *custo_out);
+
 
 #endif //PROJETO_02_EDII_GRAFO_H
