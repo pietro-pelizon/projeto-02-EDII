@@ -57,8 +57,8 @@ void svg_posicao_endereco(FILE *svg, double x, double y, char *id) {
 }
 
 void svg_rect_componente_conexo(FILE *svg, char *cor, double min_x, double min_y, double max_x, double max_y){
-	double height = max_x - min_x;
-	double width = max_y - min_y;
+	double height =  max_y - min_y;
+	double width = max_x - min_x;
 
 	fprintf(svg, "<rect x=\"%.2lf\" y=\"%.2lf\" width=\"%.2lf\" height=\"%.2lf\" fill=\"%s\" fill-opacity=\"0.5\" stroke=\"%s\" stroke-width=\"2\" />\n",
 			min_x, min_y, width, height, cor, cor);
