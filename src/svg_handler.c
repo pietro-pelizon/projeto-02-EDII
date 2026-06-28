@@ -2,6 +2,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "utils.h"
+
 #include "../include/quadra.h"
 #include "../include/ponto.h"
 #include "../include/grafo.h"
@@ -9,7 +12,10 @@
 
 FILE *svg_init(const char *caminho, double min_x, double min_y, double max_x, double max_y) {
 	FILE *svg = fopen(caminho, "w");
-	if (!svg) return NULL;
+	if (!svg) {
+		ERRO_LOG("Erro ao abrir o arquivo (.svg): %s", caminho);
+		return NULL;
+	}
 
 	double margem = 500.0;
 	double vx = min_x - margem;
@@ -122,8 +128,8 @@ void svg_anima_caminho(FILE *svg, list_t *caminho, graph_t *g, const char *id_pa
 	}
 	fprintf(svg, "\" />\n");
 
-	fprintf(svg, "<image href=\"/home/pietro/Imagens/Capturas de tela/Captura de tela de 2026-05-28 15-30-39.png\" "
-				 "x=\"-60\" y=\"-60\" width=\"120\" height=\"120\">\n");
+	fprintf(svg, "<image href=\"data:gif/png;base64,%s\" "
+				 "x=\"-60\" y=\"-60\" width=\"120\" height=\"120\">\n", IMG_BASE64);
 	fprintf(svg, "    <animateMotion dur=\"%lf\" repeatCount=\"indefinite\">\n", velocidade);
 	fprintf(svg, "        <mpath xlink:href=\"#%s\"/>\n", id_path);
 	fprintf(svg, "    </animateMotion>\n");

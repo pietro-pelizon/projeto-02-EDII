@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "utils.h"
+
 
 typedef struct stPonto {
     double x, y;
@@ -11,7 +13,7 @@ typedef struct stPonto {
 ponto_t *ponto_init(double x, double y) {
     ponto_t *p = malloc (sizeof(ponto_t));
     if (p == NULL) {
-        printf("Erro ao alocar memória para o ponto! (ponto.c:%d)\n", __LINE__);
+        ERRO_LOG("Erro ao alocar memória para o ponto.");
         return NULL;
     }
 
