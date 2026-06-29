@@ -59,11 +59,11 @@ typedef struct stContextoMaisProximo {
 } mais_proximo_ctx_t;
 
 
-static void comando_ao(char *linha_atual, graph_t *g, exhash_t *quadras, list_t *registradores, FILE *svg, FILE *txt);
-static void comando_mvm(char *linha_atual, graph_t *g);
-static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg);
-static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt);
-static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_t *registradores);
+static void comando_ao(char *linha_atual, graph_t *g, exhash_t *quadras, list_t *registradores, FILE *svg, FILE *txt, int num_linha);
+static void comando_mvm(char *linha_atual, graph_t *g, FILE *txt, int num_linha);
+static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg, int num_linha);
+static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, int num_linha);
+static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_t *registradores, int num_linha);
 
 static bool is_dentro_da_regiao(double px, double py, double rx, double ry, double rw, double rh);
 static int compara_comprimento_arestas(const void *a, const void *b);
@@ -80,6 +80,7 @@ static void cria_caminho(FILE *svg, list_t *caminho_curto, list_t *caminho_rapid
     double duracao_curto, double duracao_rapido, registrador_t *src, registrador_t *dst);
 static void decide_tempo(double tempo_rapido, double tempo_curto, double *duracao_rapido, double *duracao_curto);
 static void iterator_exp(exp_ctx_t contexto, exhash_t *pais, double vl, graph_t *g, FILE *svg);
+static bool filtro_velocidade(void *edge_data, void *context);
 
 /*------------------------------------------------------------------------------------------*/
 /* ----- Função principal do módulo ----- */
@@ -89,27 +90,32 @@ void qry_handler(char *path_qry, graph_t *g, exhash_t *quadras, FILE *svg, FILE 
     assert(path_qry);
 
     FILE *arquivo_qry = fopen(path_qry, "r");
-    assert(arquivo_qry != NULL);
+    if (arquivo_qry == NULL) {
+       ERRO_LOG("Erro ao abrir o arquivo (.qry): %s", path_qry);
+        return;
+    }
 
     list_t *registradores = list_init();
 
     char linha[512];
 
+    int num_linha = 0;
     while (fgets(linha, sizeof(linha), arquivo_qry)) {
+    num_linha++;
 
         char comando[5] = "";
         sscanf(linha, "%4s", comando);
 
         if (strcmp(comando, "@o?") == 0) {
-            comando_ao(linha, g, quadras, registradores, svg, txt);
+            comando_ao(linha, g, quadras, registradores, svg, txt, num_linha);
         } else if (strcmp(comando, "mvm") == 0) {
-            comando_mvm(linha, g);
+            comando_mvm(linha, g, txt, num_linha);
         } else if (strcmp(comando, "regs") == 0) {
-            comando_regs(linha, g, txt, svg);
+            comando_regs(linha, g, txt, svg, num_linha);
         } else if (strcmp(comando, "exp") == 0) {
-            comando_exp(linha, g, svg, txt);
+            comando_exp(linha, g, svg, txt, num_linha);
         } else if (strcmp(comando, "p?") == 0) {
-            comando_p(linha, g, svg, txt, registradores);
+            comando_p(linha, g, svg, txt, registradores, num_linha);
         }
     }
 
@@ -121,13 +127,12 @@ void qry_handler(char *path_qry, graph_t *g, exhash_t *quadras, FILE *svg, FILE 
 /* ----- Implementação das funções que fazem parsing dos comandos ----- */
 /*------------------------------------------------------------------------------------------*/
 
-static void comando_ao(char *linha_atual, graph_t *g, exhash_t *quadras, list_t *registradores, FILE *svg, FILE *txt) {
+static void comando_ao(char *linha_atual, graph_t *g, exhash_t *quadras, list_t *registradores, FILE *svg, FILE *txt, int num_linha) {
     char id_reg[64], cep[64], face;
     double numero;
 
-    int lidos = sscanf(linha_atual, "@o? %63s %63s %c %lf", id_reg, cep, &face, &numero);
-    if (lidos != 4) {
-        fprintf(stderr, "Linha mal formatada no arquivo (.qry) - comando: '@o?'. (qry_handler.c:%d)\n", __LINE__);
+    if (sscanf(linha_atual, "@o? %63s %63s %c %lf", id_reg, cep, &face, &numero) != 4) {
+        ERRO_LOG("Linha %d mal formatada! (comando: '@o?')", num_linha);
         return;
     }
 
@@ -138,12 +143,13 @@ static void comando_ao(char *linha_atual, graph_t *g, exhash_t *quadras, list_t 
     bool found = exhash_search(quadras, cep, &quadra_procurada);
 
     if (!found) {
-        fprintf(stderr, "Quadra de CEP %s não encontrada no parser do comando '@o?'. (qry_handler.c:%d)\n", cep, __LINE__);
+        ERRO_LOG("Quadra de CEP %s não encontrada.  (comando '@o?').", cep);
         return;
     }
 
 
     double x = 0, y = 0;
+
 
     // Pegamos a coordenada (x, y) que será salva no registrador
     quadra_get_coord(face, &x, &y, quadra_procurada, numero);
@@ -155,7 +161,7 @@ static void comando_ao(char *linha_atual, graph_t *g, exhash_t *quadras, list_t 
     if (reg != NULL) {
         free(reg -> id_mais_proximo);
         reg -> id_mais_proximo = my_strdup(id_vertice_mais_proximo);
-        fprintf(stderr, "Registrador já existe na lista, coordenadas atualizadas. (qry_handler.c:%d)\n", __LINE__);
+        fprintf(stdout, "Registrador já existe na lista, coordenadas atualizadas.\n");
     }
 
     else {
@@ -169,21 +175,19 @@ static void comando_ao(char *linha_atual, graph_t *g, exhash_t *quadras, list_t 
     }
 
     // Escrevendo info no (.txt)
-    fprintf(txt, "[*] @o? %s %s %c %lf\n", id_reg, cep, face, numero);
-    fprintf(txt, "Ponto do endereço: (%.2lf, %.2lf)\n\n", x, y);
+    fprintf(txt, "\n[*] @o? %s %s %c %.2lf\n", id_reg, cep, face, numero);
+    fprintf(txt, "Ponto do endereço: (%.2lf, %.2lf)\n", x, y);
 
 
     // Colocando informações visuais no (.svg)
     svg_posicao_endereco(svg, x, y, id_reg);
 }
 
-static void comando_mvm(char *linha_atual, graph_t *g) {
+static void comando_mvm(char *linha_atual, graph_t *g, FILE *txt, int num_linha) {
     double nova_vm = 0, x = 0, y = 0, w = 0, h = 0;
 
-    // Coleta os dados da linha atual
-    int lidos = sscanf(linha_atual, "mvm %lf %lf %lf %lf %lf", &nova_vm, &x, &y, &w, &h);
-    if (lidos != 5) {
-        fprintf(stderr, "Linha mal formatada no arquivo (.qry) - comando: 'mvm'. (qry_handler.c:%d)\n", __LINE__);
+    if (sscanf(linha_atual, "mvm %lf %lf %lf %lf %lf", &nova_vm, &x, &y, &w, &h) != 5) {
+        ERRO_LOG("Linha %d mal formatada! (comando: 'mvm')", num_linha);
         return;
     }
 
@@ -193,24 +197,92 @@ static void comando_mvm(char *linha_atual, graph_t *g) {
     // Varre o grafo inteiro, checa se as arestas estão
     // na região especificada e atualiza sua velocidade média
     graph_foreach_vertex(g, atualiza_velocidade_media_aresta, &contexto);
+
+    fprintf(txt, "\n[*] mvm %.2lf %.2lf %.2lf %.2lf %.2lf\n", nova_vm, x, y, w, h);
 }
 
-static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg) {
+static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg, int num_linha) {
     double vl_min = 0;
-    if (sscanf(linha_atual, "regs %lf", &vl_min) != 1) return;
 
-    // TODO: Implementar algoritmo de Tarjan para achar SCC
+    if (sscanf(linha_atual, "regs %lf", &vl_min) != 1) {
+        ERRO_LOG("Linha %d mal formatada! (comando: 'regs')", num_linha);
+        return;
+    }
+
+
+    // Retorna uma lista de listas
+    list_t *todos_os_sccs = tarjan(g, filtro_velocidade, &vl_min);
+
+    int num_bairros = 0;
+
+    // Itera sobre a lista principal (cada item é um SCC/Bairro)
+    for (list_node_t *no_scc = list_node_front(todos_os_sccs); no_scc != NULL; no_scc = list_node_next(no_scc)) {
+        list_t *scc_atual = list_node_data(no_scc);
+
+        if (list_size(scc_atual) <= 0) {
+            continue;
+        }
+
+        num_bairros++;
+
+        // Inicializa os limites da Bounding Box com valores extremos
+        double min_x = INFINITY, min_y = INFINITY;
+        double max_x = -INFINITY, max_y = -INFINITY;
+        bool tem_vertice = false;
+
+        // Itera sobre as esquinas (IDs) DESTE bairro específico
+        for (list_node_t *no_id = list_node_front(scc_atual); no_id != NULL; no_id = list_node_next(no_id)) {
+
+
+            char *id_esquina = list_node_data(no_id);
+
+            vertex_t *dado_vertice = graph_get_vertex(g, id_esquina);
+
+
+            if (dado_vertice != NULL) {
+                ponto_t *vertice = vertex_get_data(dado_vertice);
+                double x = ponto_get_x(vertice);
+                double y = ponto_get_y(vertice);
+
+                // Atualiza a Bounding Box
+                double padding = 10.0;
+                if (x < min_x) min_x = x - padding;
+                if (y < min_y) min_y = y - padding;
+                if (x > max_x) max_x = x + padding ;
+                if (y > max_y) max_y = y + padding;
+
+                tem_vertice = true;
+            }
+        }
+
+        // Desenha o retângulo do bairro no SVG
+        if (tem_vertice) {
+
+            char cor[16] = "";
+            gera_cor_aleatoria(cor);
+
+            svg_rect_componente_conexo(svg, cor, min_x, min_y, max_x, max_y);
+        }
+    }
+
+    fprintf(txt, "\n[*] regs %.2lf\n", vl_min);
+    fprintf(txt, "Quantidade de SCCs: %d\n", num_bairros);
+
+    for (list_node_t *no_scc = list_node_front(todos_os_sccs); no_scc != NULL; no_scc = list_node_next(no_scc)) {
+        list_t *scc_atual = list_node_data(no_scc);
+        list_free(scc_atual, free);
+    }
+    list_free(todos_os_sccs, NULL);
 }
 
-static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
+static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, int num_linha) {
     assert (g != NULL && linha_atual != NULL);
 
     double vl = 0;
 
     // Lendo a linha e pegando info
-    int lidos = sscanf(linha_atual, "exp %lf", &vl);
-    if (lidos != 1) {
-        fprintf(stderr, "Linha mal formatada no arquivo (.qry) - comando: 'exp'. (qry_handler.c:%d)\n", __LINE__);
+    if (sscanf(linha_atual, "exp %lf", &vl) != 1) {
+        ERRO_LOG("Linha %d mal formatada! (comando: 'exp')", num_linha);
         return;
     }
 
@@ -238,35 +310,34 @@ static void comando_exp(char *linha_atual, graph_t *g, FILE *svg, FILE *txt) {
     iterator_exp(contexto, pais, vl, g, svg);
 
 
-    fprintf(txt, "[*] exp %.2lf\n", vl);
+    fprintf(txt, "\n[*] exp %.2lf\n", vl);
 
     exhash_destroy(pais, NULL);
     free(contexto.array);
 
 }
 
-static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_t *registradores) {
+static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_t *registradores, int num_linha) {
 
     char id_src[64] = "",
     id_dst[64] = "",
     cor_rapido[64] = "",
     cor_curto[64] = "";
 
-    int lidos = sscanf(linha_atual, "p? %63s %63s %63s %63s", id_src, id_dst, cor_curto, cor_rapido);
-    if (lidos != 4) {
-        fprintf(stderr, "Linha mal formatada no arquivo (.qry) - comando: 'p?'. (qry_handler.c:%d)\n", __LINE__);
+    if (sscanf(linha_atual, "p? %63s %63s %63s %63s", id_src, id_dst, cor_curto, cor_rapido) != 4) {
+        ERRO_LOG("Linha %d mal formatada! (comando: 'p?')", num_linha);
         return;
     }
 
     registrador_t *src = list_search(registradores, id_src, compara_registradores);
     if (!src) {
-        fprintf(stderr, "Registrador de origem não encontrado! (qry_handler.c:%d)\n", __LINE__);
+        ERRO_LOG("Registrador de origem não encontrado!");
         return;
     }
 
     registrador_t *dst = list_search(registradores, id_dst, compara_registradores);
     if (!dst) {
-        fprintf(stderr, "Registrador de destino não encontrado! (qry_handler.c:%d)\n", __LINE__);
+        ERRO_LOG("Registrador de destino não encontrado!");
         return;
     }
 
@@ -283,7 +354,7 @@ static void comando_p(char *linha_atual, graph_t *g, FILE *svg, FILE *txt, list_
 
 
 
-    fprintf(txt, "[*] p? %s %s %s %s\n", id_src, id_dst, cor_curto, cor_rapido);
+    fprintf(txt, "\n[*] p? %s %s %s %s\n", id_src, id_dst, cor_curto, cor_rapido);
 
     if (list_size(caminho_curto) == 0 || list_size(caminho_rapido) == 0) {
         fprintf(txt, "Caminho inacessível!\n");
@@ -330,7 +401,6 @@ static void iterator_exp(exp_ctx_t contexto, exhash_t *pais, double vl, graph_t 
         }
     }
 }
-
 
 static void decide_tempo(double tempo_rapido, double tempo_curto, double *duracao_rapido, double *duracao_curto) {
     if (tempo_rapido <= tempo_curto) {
@@ -524,3 +594,9 @@ static double calcula_tempo_caminho(list_t *caminho, graph_t *g) {
     return total;
 }
 
+static bool filtro_velocidade(void *edge_data, void *context) {
+    rua_t *rua = (rua_t *)edge_data;
+    double *vl_min = (double *)context;
+
+    return rua_get_velocidade_media(rua) >= *vl_min;
+}
