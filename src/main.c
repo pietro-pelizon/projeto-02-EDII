@@ -28,6 +28,7 @@ static void processa_consultas(const char *dir_entrada, const char *dir_saida,
                                 exhash_t *quadras, FILE *svg);
 static void extrair_nome_base(const char *caminho, char *nome_base);
 static void bbox_quadra_cb(void *record_data, void *context);
+static void print_mensagem_help();
 
 
 
@@ -40,9 +41,6 @@ static void destrutor_quadra(void *data) {
 }
 
 int main(int argc, char *argv[]) {
-    clock_t start = clock();
-
-
     char *path_qry = NULL,
     *path_via = NULL,
     *path_geo = NULL,
@@ -61,6 +59,9 @@ int main(int argc, char *argv[]) {
             path_qry = argv[++i];
         } else if (strcmp(argv[i], "-v") == 0 && i + 1 < argc) {
             path_via = argv[++i];
+        } else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
+           print_mensagem_help();
+            return 0;
         }
     }
 
@@ -102,12 +103,6 @@ int main(int argc, char *argv[]) {
     svg_close(svg);
     graph_destroy(g);
     exhash_destroy(quadras, destrutor_quadra);
-
-    clock_t end = clock();
-
-    double tempo = (double)(end - start) / CLOCKS_PER_SEC;
-    printf("\n[!]Tempo de execução do programa: %f segundos\n\n", tempo);
-
 
     return 0;
 }
@@ -229,6 +224,19 @@ static void processa_consultas(const char *dir_entrada, const char *dir_saida,
     }
     qry_handler(path_qry_completo, g, quadras, svg, txt);
     fclose(txt);
+}
+
+static void print_mensagem_help() {
+    printf("Uso: ted [OPÇÕES]\n\n");
+    printf("Opções:\n");
+    printf("  -f <arquivo.geo>   (obrigatório) Arquivo com a descrição da cidade\n");
+    printf("  -o <dir>           (obrigatório) Diretório de saída\n");
+    printf("  -e <dir>           (opcional)    Diretório base de entrada\n");
+    printf("  -q <arquivo.qry>   (opcional)    Arquivo de consultas\n");
+    printf("  -v <arquivo.via>   (opcional)    Arquivo do sistema viário\n");
+    printf("  -h, --help                       Exibe esta mensagem\n\n");
+    printf("Exemplo:\n");
+    printf("  ted -e entrada/ -f cidade.geo -v vias.via -q consultas.qry -o saida/\n");
 }
 
 
