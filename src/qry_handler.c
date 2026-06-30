@@ -15,11 +15,6 @@
 #include "../include/ponto.h"
 #include "../include/rua.h"
 
-// Macro para definir tamanho do bucket independente
-// do tamanho em bytes do dado
-#define EXHASH_BUCKET_BYTES(record_size, n_entries) \
-((sizeof(uint64_t) + (record_size)) * (n_entries) + sizeof(uint16_t) * 2)
-
 /*------------------------------------------------------------------------------------------*/
 /* ----- Structs auxiliares ----- */
 /*------------------------------------------------------------------------------------------*/
@@ -211,6 +206,10 @@ static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg, in
 
 
     // Retorna uma lista de listas
+
+    // Desabilitando (ou ignorando) arestas com vm < vl
+    // ANTES de rodar o Tarjan, conforme exigido na especificação
+    // (trechos insuficientes) utilizando "filtro_velocidade"
     list_t *todos_os_sccs = tarjan(g, filtro_velocidade, &vl_min);
 
     int num_bairros = 0;
@@ -248,7 +247,7 @@ static void comando_regs(char *linha_atual, graph_t *g, FILE *txt, FILE *svg, in
                 double padding = 10.0;
                 if (x < min_x) min_x = x - padding;
                 if (y < min_y) min_y = y - padding;
-                if (x > max_x) max_x = x + padding ;
+                if (x > max_x) max_x = x + padding;
                 if (y > max_y) max_y = y + padding;
 
                 tem_vertice = true;

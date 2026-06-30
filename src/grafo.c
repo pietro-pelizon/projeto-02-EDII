@@ -13,8 +13,6 @@
 #include "rua.h"
 #include "utils.h"
 
-#define EXHASH_BUCKET_BYTES(record_size, n_entries) \
-((sizeof(uint64_t) + (record_size)) * (n_entries) + sizeof(uint16_t) * 2)
 
 // ======= CONTEXT STRUCTS ========
 
@@ -483,7 +481,7 @@ static void relax_edges(const char *u_id, double current_cost, dijkstra_ctx_t *c
                 pq_enqueue(ctx -> min_heap, v_id, new_cost);
 
             }
-            
+
             else {
                 exhash_insert(ctx -> costs, &new_cost, v_id);
                 pq_change_priority(ctx -> min_heap, v_id, new_cost);

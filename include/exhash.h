@@ -4,6 +4,11 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
+// Macro para definir tamanho do bucket independente
+// do tamanho em bytes do dado
+#define EXHASH_BUCKET_BYTES(record_size, n_entries) \
+((sizeof(uint64_t) + (record_size)) * (n_entries) + sizeof(uint16_t) * 2)
+
 /*
  * @file exhash.h
  * @brief Tipo Abstrato de Dados exhash
