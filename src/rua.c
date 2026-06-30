@@ -19,14 +19,6 @@ typedef struct stRua {
 rua_t *rua_init(char *cep_esquerda, char *cep_direita, const char *nome, double vm, double cmp) {
     assert(nome != NULL);
 
-    if (cep_direita == NULL) {
-        cep_direita = "-";
-    }
-
-    if (cep_esquerda == NULL) {
-        cep_esquerda = "-";
-    }
-
     rua_t *r = malloc(sizeof(rua_t));
     assert(r != NULL);
 
