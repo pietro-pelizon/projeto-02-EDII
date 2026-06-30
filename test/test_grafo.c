@@ -161,7 +161,7 @@ void is_adjacente_retorna_true_para_aresta_existente(void) {
     graph_add_vertex(g, payload_v(2), "v2");
     graph_add_edge(g, payload_e(1.0), "v1", "v2", "Rua_C");
 
-    TEST_ASSERT_TRUE(is_adjacente(g, "v1", "v2"));
+    TEST_ASSERT_TRUE(graph_is_adjacent(g, "v1", "v2"));
 
     graph_destroy(g);
 }
@@ -175,7 +175,7 @@ void is_adjacente_nao_e_simetrico(void) {
     graph_add_edge(g, payload_e(1.0), "v1", "v2", "Rua_C");
 
     // Aresta v1 -> v2, mas NAO v2 -> v1
-    TEST_ASSERT_FALSE(is_adjacente(g, "v2", "v1"));
+    TEST_ASSERT_FALSE(graph_is_adjacent(g, "v2", "v1"));
 
     graph_destroy(g);
 }
@@ -187,7 +187,7 @@ void is_adjacente_retorna_false_sem_aresta(void) {
     graph_add_vertex(g, payload_v(1), "v1");
     graph_add_vertex(g, payload_v(2), "v2");
 
-    TEST_ASSERT_FALSE(is_adjacente(g, "v1", "v2"));
+    TEST_ASSERT_FALSE(graph_is_adjacent(g, "v1", "v2"));
 
     graph_destroy(g);
 }
@@ -241,7 +241,7 @@ void remove_edge_impede_busca_posterior(void) {
 
     TEST_ASSERT_TRUE(graph_remove_edge(g, "v1", "v2"));
     TEST_ASSERT_NULL(graph_get_edge(g, "v1", "v2"));
-    TEST_ASSERT_FALSE(is_adjacente(g, "v1", "v2"));
+    TEST_ASSERT_FALSE(graph_is_adjacent(g, "v1", "v2"));
 
     graph_destroy(g);
 }
@@ -294,8 +294,8 @@ void remove_vertex_limpa_arestas_dos_vizinhos(void) {
     // devem sumir automaticamente
     graph_remove_vertex(g, "v1");
 
-    TEST_ASSERT_FALSE(is_adjacente(g, "v2", "v1"));
-    TEST_ASSERT_FALSE(is_adjacente(g, "v3", "v1"));
+    TEST_ASSERT_FALSE(graph_is_adjacent(g, "v2", "v1"));
+    TEST_ASSERT_FALSE(graph_is_adjacent(g, "v3", "v1"));
 
     graph_destroy(g);
 }
@@ -313,7 +313,7 @@ void remove_vertex_nao_corrompe_outros_vertices(void) {
 
     TEST_ASSERT_NOT_NULL(graph_get_vertex(g, "v1"));
     TEST_ASSERT_NOT_NULL(graph_get_vertex(g, "v3"));
-    TEST_ASSERT_TRUE(is_adjacente(g, "v1", "v3"));
+    TEST_ASSERT_TRUE(graph_is_adjacent(g, "v1", "v3"));
 
     graph_destroy(g);
 }
@@ -332,7 +332,7 @@ void set_get_nv(void) {
 void get_exhash_retorna_nao_null(void) {
     graph_t *g = novo_grafo();
 
-    TEST_ASSERT_NOT_NULL(graph_get_exhash(g));
+    TEST_ASSERT_NOT_NULL(graph_get_vertices_map(g));
 
     graph_destroy(g);
 }

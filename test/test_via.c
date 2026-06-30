@@ -110,7 +110,7 @@ void carrega_aresta_simples(void) {
 
     via_handler(path, g);
 
-    TEST_ASSERT_TRUE(is_adjacente(g, "cruzA", "cruzB"));
+    TEST_ASSERT_TRUE(graph_is_adjacent(g, "cruzA", "cruzB"));
 
     graph_destroy(g);
     remove(path);
@@ -156,8 +156,8 @@ void aresta_e_direcional(void) {
 
     via_handler(path, g);
 
-    TEST_ASSERT_TRUE (is_adjacente(g, "cruzA", "cruzB"));
-    TEST_ASSERT_FALSE(is_adjacente(g, "cruzB", "cruzA"));
+    TEST_ASSERT_TRUE (graph_is_adjacent(g, "cruzA", "cruzB"));
+    TEST_ASSERT_FALSE(graph_is_adjacent(g, "cruzB", "cruzA"));
 
     graph_destroy(g);
     remove(path);
@@ -179,8 +179,8 @@ void multiplas_arestas_do_mesmo_vertice(void) {
 
     via_handler(path, g);
 
-    TEST_ASSERT_TRUE(is_adjacente(g, "cruzA", "cruzB"));
-    TEST_ASSERT_TRUE(is_adjacente(g, "cruzA", "cruzC"));
+    TEST_ASSERT_TRUE(graph_is_adjacent(g, "cruzA", "cruzB"));
+    TEST_ASSERT_TRUE(graph_is_adjacent(g, "cruzA", "cruzC"));
 
     graph_destroy(g);
     remove(path);

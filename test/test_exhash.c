@@ -266,7 +266,7 @@ void carga_pesada_sem_corrupcao(void) {
     for (int i = 0; i < N; i++) {
         char key[32];
         snprintf(key, sizeof(key), "carga-%d", i);
-        registro_t r = {i, (float)i * 0.1f};
+        registro_t r = {i, (float)i * 0.1f, ""};
         strncpy(r.nome, key, sizeof(r.nome) - 1);
         TEST_ASSERT_TRUE(exhash_insert(map, &r, key));
     }
