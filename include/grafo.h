@@ -109,10 +109,6 @@ int graph_get_total_vertices(graph_t *g);
 /// @param new_total_vertices Quantidade de vértices
 void graph_set_total_vertices(graph_t *g, int new_total_vertices);
 
-/// @param g Ponteiro para a quadra
-/// @return Retorna o exhash de vértices
-exhash_t *graph_get_exhash(graph_t *g);
-
 /// @brief Aplica uma ação em cada vértice do grafo
 /// seguindo determinada condição dada por contexto
 /// @param g Ponteiro para o grafo
@@ -145,6 +141,14 @@ void *edge_get_data(edge_t *e);
 /// @return Retorna uma lista ordenada com os identificadores
 /// dos vértices que compoem o melhor caminho
 list_t *dijkstra(graph_t *g, bool flag_tempo, char *id_src,  char *id_dst, double *custo_out);
+
+/// @brief Executa o algoritmo de Tarjan para encontrar Componentes Fortemente Conexos (SCCs).
+/// @param g Grafo contendo a estrutura viária da cidade.
+/// @param filter Callback de filtragem que decide quais arestas são consideradas
+/// para o cálculo dos componentes.
+/// @param filter_ctx Contexto adicional passado para a função de filtragem.
+/// @return Uma lista contendo sub-listas (cada sub-lista é um componente conexo).
+list_t *tarjan(graph_t *g, edge_filter_fn filter, void *filter_ctx);
 
 
 #endif //PROJETO_02_EDII_GRAFO_H
