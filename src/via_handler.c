@@ -76,7 +76,7 @@ static void comando_e(char *linha_lida, graph_t *g, int num_linha   ) {
 
     // %[^\r\n] captura tudo (incluindo espaços) até a quebra de linha
     if (sscanf(linha_lida, "e %63s %63s %63s %63s %lf %lf %127[^\r\n]", src_id, target_id, cep_dir, cep_esq, &cmp, &vm, nome) != 7) {
-        ERRO_LOG("Linha %d mal formatada! (comando: 'e'", num_linha);
+        ERRO_LOG("Linha %d mal formatada! (comando: 'e')", num_linha);
         return;
     }
 
