@@ -478,13 +478,13 @@ static void relax_edges(const char *u_id, double current_cost, dijkstra_ctx_t *c
         if (new_cost < v_cost) {
             if (found_v) {
                 exhash_update(ctx -> costs, v_id, &new_cost);
-                pq_enqueue(ctx -> min_heap, v_id, new_cost);
-
+                pq_change_priority(ctx -> min_heap, v_id, new_cost);
             }
 
             else {
                 exhash_insert(ctx -> costs, &new_cost, v_id);
-                pq_change_priority(ctx -> min_heap, v_id, new_cost);
+                pq_enqueue(ctx -> min_heap, v_id, new_cost);
+
             }
 
             void *old_parent = exhash_remove(ctx -> parents, v_id);
@@ -492,7 +492,6 @@ static void relax_edges(const char *u_id, double current_cost, dijkstra_ctx_t *c
                 free(*(char **)old_parent);
                 free(old_parent);
             }
-
 
             char *u_id_copy = my_strdup(u_id);
             exhash_insert(ctx -> parents, &u_id_copy, v_id);
