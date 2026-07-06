@@ -19,6 +19,8 @@ CMakeLists.txt
 *.txt
 .idea
 /t2
+/gab-t2
+/imagem_caminho
 
 build
 
