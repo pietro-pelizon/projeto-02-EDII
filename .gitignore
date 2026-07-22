@@ -3,24 +3,18 @@
 *.json
 *.cmake
 *.build
-*.gitattributes
 *.editorconfig
-*.md
 *.hf
 *.svg
-*.sh
 *.hfd
 *.EXE
 *.bin
 ted
 saida
-t1
 CMakeLists.txt
 *.txt
 .idea
-/t2
 /gab-t2
-/imagem_caminho
 
 build
 
