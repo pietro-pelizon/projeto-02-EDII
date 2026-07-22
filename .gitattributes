@@ -1,0 +1,3 @@
+*.geo linguist-detectable=false
+*.qry linguist-detectable=false
+*.via linguist-detectable=false
