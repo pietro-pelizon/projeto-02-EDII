@@ -32,7 +32,7 @@ $(OBJ_DIR)/%.o: %.c
 # TARGETS DE TESTES
 # ==========================================================
 
-test_%: $(CORE_OBJS) ../test/test_%.c ../unity/unity.c
+test_%: $(CORE_OBJS) ../unit_test ../unity/unity.c
 	@echo "Compilando $@..."
 	@$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
 	@echo "Executando testes...\n"
