@@ -2,7 +2,7 @@
 
 # Rodar a partir da pasta src/
 EXEC="./ted"
-BASE="../t2"
+BASE="../testes"
 SAIDA="../saida"
 
 QRYS=(
