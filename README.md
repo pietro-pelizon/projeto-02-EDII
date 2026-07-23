@@ -110,6 +110,15 @@ O programa suporta até cinco parâmetros de linha de comando:
 ./ted -e [path] -f [arq.geo] -q [consulta.qry] -v [arqvias.via] -o [dir_saida]
 ```
 
+
+| **Parâmetro** | **Obrigatório** | **Descrição**                                                                  |
+|---------------|-----------------|--------------------------------------------------------------------------------|
+| `-e path`     | Não             | Diretório-base de entrada (`BED`). Se omitido, usa o diretório atual.          |
+| `-f arq.geo`  | Sim             | Arquivo principal com a descrição da cidade.                                   |
+| `-v arq.via`  | Não             | Arquivo de vias para a construção do grafo de tráfego.                         |
+| `-q arq.qry`  | Não             | Arquivo de consultas e comandos.                                               |
+| `-o path`     | Sim             | Diretório-base de saída (`BSD`) onde os arquivos `.svg` e `.txt` serão salvos. |
+
 **Automação da execução:**
 
 Pode se utilizar o script `(.sh)` provido no repositório para executar todos os testes de uma vez.
@@ -123,15 +132,6 @@ chmod +x run.sh && ./run.sh
 Isso retira o processo de citar arquivo por arquivo corretamente. O único pré-requisito é que a pasta `testes` esteja presente na raiz do projeto, contendo todos os arquivos `(.geo), (.qry) e (.via)`.
 
 
-
-
-| **Parâmetro** | **Obrigatório** | **Descrição**                                                                  |
-|---------------|-----------------|--------------------------------------------------------------------------------|
-| `-e path`     | Não             | Diretório-base de entrada (`BED`). Se omitido, usa o diretório atual.          |
-| `-f arq.geo`  | Sim             | Arquivo principal com a descrição da cidade.                                   |
-| `-v arq.via`  | Não             | Arquivo de vias para a construção do grafo de tráfego.                         |
-| `-q arq.qry`  | Não             | Arquivo de consultas e comandos.                                               |
-| `-o path`     | Sim             | Diretório-base de saída (`BSD`) onde os arquivos `.svg` e `.txt` serão salvos. |
 
 
 ## Estrutura do Código (Módulos)
