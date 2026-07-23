@@ -110,6 +110,21 @@ O programa suporta até cinco parâmetros de linha de comando:
 ./ted -e [path] -f [arq.geo] -q [consulta.qry] -v [arqvias.via] -o [dir_saida]
 ```
 
+**Automação da execução:**
+
+Pode se utilizar o script `(.sh)` provido no repositório para executar todos os testes de uma vez.
+
+O seguinte comando deve ser executado após a compilação:
+
+```bash
+chmod +x run.sh && ./run.sh
+```
+
+Isso retira o processo de citar arquivo por arquivo corretamente. O único pré-requisito é que a pasta `testes` esteja presente na raiz do projeto, contendo todos os arquivos `(.geo), (.qry) e (.via)`.
+
+
+
+
 | **Parâmetro** | **Obrigatório** | **Descrição**                                                                  |
 |---------------|-----------------|--------------------------------------------------------------------------------|
 | `-e path`     | Não             | Diretório-base de entrada (`BED`). Se omitido, usa o diretório atual.          |
